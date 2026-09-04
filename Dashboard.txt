@@ -1,0 +1,2453 @@
+MALE UAV AERO-PISTON ENGINE DIGITAL TWIN
+DASHBOARD — FINAL DEVELOPMENT PLAN, MODULAR ARCHITECTURE & TECH STACK
+======================================================================
+
+DOCUMENT STATUS
+---------------
+Version: Final Dashboard Plan
+Scope: Dashboard only
+Target: SIH 2026 Digital Twin demonstration and progressive integration
+Architecture principle: Modular, replaceable, independently testable
+
+IMPORTANT:
+This document defines the dashboard/application layer. The Digital Twin
+physics model, AI/ML models, telemetry gateway, mission engine, and simulation
+systems are external services/modules that the dashboard consumes.
+
+======================================================================
+0. PURPOSE
+======================================================================
+
+Build a professional, operator-facing aerospace engine-health dashboard for
+the SIH 2026 Digital Twin system.
+
+The dashboard is the primary visual interface for:
+
+- Engine health monitoring
+- Live telemetry
+- Cylinder-level thermal monitoring
+- Anomaly/fault visualization
+- Physics-vs-actual Twin analysis
+- AI/ML diagnostic output
+- Degradation and RUL presentation
+- Maintenance advisories
+- Mission analysis and replay
+- Scenario selection/injection
+- Cyber-physical Twin visualization
+- Alert and notification management
+
+The dashboard must be independently developable using mock/synthetic data.
+
+Later, the mock layer must be replaceable by the real backend, telemetry
+gateway, Digital Twin Core, AI/ML services, scenario engine, mission/replay
+services, and eventually real UAV data WITHOUT redesigning the dashboard UI.
+
+======================================================================
+1. CORE ARCHITECTURE PRINCIPLE
+======================================================================
+
+The dashboard follows strict separation of concerns:
+
+                    EXTERNAL SYSTEMS
+                         |
+        +----------------+----------------+
+        |                |                |
+   Telemetry       Twin / Physics      AI / ML
+   Gateway             Core            Analytics
+        |                |                |
+        +----------------+----------------+
+                         |
+                    Backend/API
+                         |
+                    Data Adapter
+                         |
+                 Application State
+                         |
+        +----------------+----------------+
+        |                |                |
+       UI             Charts          3D Twin
+     Pages           /Trends        Visualization
+
+
+STRICT RULES
+------------
+
+1. UI components render data and collect user interaction.
+2. UI components must NOT contain physics equations.
+3. UI components must NOT contain AI model logic.
+4. UI components must NOT generate authoritative telemetry.
+5. Scenario physics belongs outside the presentation layer.
+6. Replay logic belongs outside the presentation layer.
+7. The Data Adapter is the boundary between external data and UI data.
+8. API/service contracts must be versioned and stable.
+9. Components must be reusable and independently testable.
+10. A backend or data source can be replaced without rebuilding the UI.
+11. The 3D Twin renderer must be independent of the current asset source.
+12. The dashboard must degrade gracefully when services are unavailable.
+
+======================================================================
+2. MODULAR ARCHITECTURE — HOW TO BUILD IT
+======================================================================
+
+The dashboard is divided into independent modules.
+
+MODULE A — Presentation/UI
+--------------------------
+Responsible for:
+
+- Pages
+- Layout
+- Cards
+- Tables
+- Buttons
+- Forms
+- Tabs
+- Panels
+- Alerts
+- Status indicators
+
+It receives already-processed data.
+
+It does not know where the data came from.
+
+MODULE B — Application State
+----------------------------
+Responsible for:
+
+- Current telemetry
+- Health state
+- Alerts
+- Scenario state
+- Mission state
+- Replay state
+- Twin state
+- Diagnostics state
+- Connection state
+- UI preferences
+
+Recommended tool:
+Zustand
+
+MODULE C — Data Adapter
+-----------------------
+Responsible for translating external data into one stable dashboard model.
+
+Possible sources:
+
+- Mock data
+- Synthetic telemetry
+- REST API
+- WebSocket
+- Recorded telemetry
+- Digital Twin Core
+- AI/ML service
+- Future real UAV gateway
+
+The UI only consumes the normalized dashboard model.
+
+MODULE D — Service/API Layer
+----------------------------
+Responsible for communication.
+
+Examples:
+
+- REST API client
+- WebSocket client
+- Scenario service
+- Mission service
+- Diagnostic service
+- Replay service
+- Twin service
+
+The service layer must not be embedded inside UI components.
+
+MODULE E — Visualization Engines
+--------------------------------
+Independent visualization modules:
+
+- Telemetry chart engine
+- Trend engine
+- Residual visualization
+- 3D Twin renderer
+- Alert visualization
+- Mission timeline
+
+A visualization library can be replaced without changing the business/data
+contract.
+
+MODULE F — Domain Models / Contracts
+------------------------------------
+Defines stable structures for:
+
+- Telemetry
+- Health
+- Diagnostics
+- Alerts
+- Advisory
+- Mission
+- Replay
+- Scenario
+- Twin state
+- Synchronization state
+
+These contracts are shared between frontend and backend.
+
+MODULE G — Mock / Demo Data
+---------------------------
+Provides deterministic data for independent development.
+
+Examples:
+
+- Normal engine
+- Misfire
+- Injector abnormality
+- Lubrication issue
+- Overheating
+- Sensor drift
+- Abnormal vibration
+
+Mock data must obey the same schema as real data.
+
+MODULE H — Persistence / History
+--------------------------------
+Responsible for:
+
+- Local prototype history
+- Mission history
+- Replay datasets
+- Event history
+
+MVP:
+- In-memory
+- JSON/CSV
+
+Next stage:
+- SQLite
+
+Scalable stage:
+- PostgreSQL / appropriate time-series storage
+
+MODULE I — 3D Asset Interface
+-----------------------------
+Defines how the 3D Twin renderer receives an asset.
+
+MVP:
+- Procedural Three.js geometry
+- Primitive engine representation
+
+Future:
+- Optimized GLB/GLTF asset
+- CAD-derived asset
+
+The renderer must not depend on Blender or SolidWorks.
+
+======================================================================
+3. GOLDEN RULE — DEPENDENCY DIRECTION
+======================================================================
+
+Use this dependency direction:
+
+UI
+ ↓
+Application State
+ ↓
+Domain Models
+ ↓
+Data Adapter / Services
+ ↓
+Backend/API
+ ↓
+External Digital Twin / AI / Telemetry Systems
+
+
+NEVER:
+
+UI
+ ↓
+Physics calculations
+
+UI
+ ↓
+AI model
+
+UI
+ ↓
+Direct database access
+
+UI
+ ↓
+Direct MATLAB integration
+
+UI
+ ↓
+Direct scenario physics
+
+
+The dashboard is an application client, not the Digital Twin Core.
+
+======================================================================
+4. DASHBOARD PRODUCT STRUCTURE
+======================================================================
+
+Create these major tabs:
+
+1. Main Dashboard
+2. Live Telemetry
+3. Telemetry Trends
+4. Scenario Control
+5. Twin Analysis
+6. AI / Diagnostics
+7. Maintenance Advisory
+8. Mission Replay
+9. Twin View
+
+Also provide a persistent alert/notification mechanism accessible from the
+main interface.
+
+======================================================================
+5. MAIN DASHBOARD
+======================================================================
+
+GOAL
+----
+
+Give the operator/judge an immediate understanding of current engine health.
+
+DISPLAY
+-------
+
+- Engine identification
+- Engine configuration
+- Mission identification
+- Current operating mode
+- Data-source indicator
+- Digital Twin connection/status
+- Telemetry synchronization status
+- Overall Engine Health Index
+- Engine state:
+    NOMINAL
+    WARNING
+    DEGRADED
+    CRITICAL
+- Active alert count
+- Highest-priority active alert
+- Current mission phase
+- Key telemetry summary
+- Cylinder temperature summary
+- AI diagnostic summary
+- Current maintenance/operational advisory
+- Quick access to Scenario Control
+- Quick access to Twin View
+- Last telemetry update timestamp
+- Telemetry frame/sequence where available
+- Model/version information where useful
+
+The Main Dashboard must answer immediately:
+
+1. Is the engine healthy?
+2. What is the engine doing?
+3. Is there an active problem?
+4. What does the Twin/AI think?
+5. What should the operator investigate?
+
+FIRST-IMPRESSION REQUIREMENT
+----------------------------
+
+The Main Dashboard is the primary SIH visual impression.
+
+It must look like an aerospace/engine reliability command center rather than
+a generic IoT dashboard.
+
+======================================================================
+6. LIVE TELEMETRY TAB
+======================================================================
+
+Display the core engine telemetry required by the project.
+
+CORE PARAMETERS
+---------------
+
+- RPM
+- MAP — Manifold Absolute Pressure
+- CHT — Cylinder Head Temperature
+- EGT — Exhaust Gas Temperature
+- Oil Pressure
+- Oil Temperature
+- Fuel Flow
+- Vibration
+- Battery Voltage / Battery Health
+- Alternator Current / Alternator Health
+- Injection Timing
+
+MULTI-CYLINDER REQUIREMENT
+--------------------------
+
+CHT and EGT must be represented at cylinder level.
+
+Canonical structure:
+
+cht: [C1, C2, C3, C4]
+egt: [C1, C2, C3, C4]
+
+Example:
+
+{
+  "cht": [132.4, 135.1, 133.0, 138.2],
+  "egt": [815.0, 822.4, 810.2, 829.0]
+}
+
+The dashboard must not hard-code the UI to four cylinders forever.
+
+Use engine configuration metadata:
+
+{
+  "engine_configuration": {
+    "cylinder_count": 4
+  }
+}
+
+The UI should render the configured number of cylinders.
+
+This keeps the dashboard reusable for future engine configurations.
+
+FOR EACH PARAMETER
+------------------
+
+Provide:
+
+- Current value
+- Unit
+- Update/live status
+- Normal/warning/critical state
+- Threshold indication where appropriate
+- Mini trend where useful
+- Timestamp/data-age
+- Source where useful
+
+Avoid hardcoded telemetry inside components.
+
+======================================================================
+7. TELEMETRY TRENDS TAB
+======================================================================
+
+Use high-performance time-series visualization.
+
+PRIMARY CHART ENGINE
+--------------------
+
+Use:
+
+uPlot
+
+Reason:
+
+- Lightweight
+- MIT licensed
+- Canvas-based
+- Designed for time-series data
+- Suitable for high-frequency telemetry visualization
+- Low DOM overhead compared with large SVG-based chart trees
+
+The chart interface must remain abstracted so the library can be replaced
+later if project requirements change.
+
+MINIMUM PLOTS
+-------------
+
+- RPM vs time
+- MAP vs time
+- CHT per cylinder vs time
+- EGT per cylinder vs time
+- Oil Pressure vs time
+- Oil Temperature vs time
+- Fuel Flow vs time
+- Vibration vs time
+- Battery Voltage vs time
+- Alternator Current vs time
+- Injection Timing vs time
+- Health Index vs time
+
+FEATURES
+--------
+
+- Time-window selection
+- Zoom
+- Pan
+- Hover values
+- Parameter selection
+- Multiple-parameter comparison
+- Current-time marker
+- Historical data
+- Fault/anomaly markers
+- Scenario markers
+- Mission-phase markers
+- Event markers
+- Threshold/reference lines
+- Cylinder selection
+- Actual-vs-expected comparison where applicable
+
+The chart system must accept generic data series.
+
+Adding a new telemetry channel must NOT require rewriting the chart system.
+
+======================================================================
+8. SCENARIO CONTROL TAB
+======================================================================
+
+This is a major demonstration feature.
+
+AVAILABLE SCENARIOS
+-------------------
+
+- NORMAL
+- MISFIRE
+- INJECTOR ABNORMALITY
+- LUBRICATION ISSUE
+- OVERHEATING
+- SENSOR DRIFT
+- ABNORMAL VIBRATION
+
+Each scenario should provide:
+
+- Scenario name
+- Description
+- Severity
+- Activate/start control
+- Stop/reset control
+- Current scenario
+- Scenario status
+- Optional intensity parameter
+- Optional duration
+- Optional affected subsystem
+
+DEMONSTRATION FLOW
+------------------
+
+Normal
+  ->
+Select fault scenario
+  ->
+Scenario service modifies/generates appropriate data
+  ->
+Telemetry changes
+  ->
+Twin receives data
+  ->
+Physics residual changes
+  ->
+AI/anomaly result changes
+  ->
+Health changes
+  ->
+Alert appears
+  ->
+Maintenance advisory changes
+  ->
+Dashboard/Twin visualization changes
+
+IMPORTANT
+---------
+
+The dashboard must NOT calculate the actual fault physics.
+
+The dashboard requests or activates a scenario.
+
+Scenario generation/physics belongs to the scenario/backend/Twin layer.
+
+======================================================================
+9. TWIN ANALYSIS TAB
+======================================================================
+
+PURPOSE
+-------
+
+Explain why the Digital Twin considers the engine healthy or abnormal.
+
+DISPLAY
+-------
+
+For relevant parameters:
+
+- Actual value
+- Physics-model expected value
+- Residual
+- Residual trend
+- Residual status
+- Confidence/uncertainty where available
+
+Example:
+
+EGT
+Actual:       710 C
+Expected:     695 C
+Residual:     +15 C
+
+RECOMMENDED RESIDUAL VIEWS
+--------------------------
+
+- RPM residual
+- MAP residual
+- CHT residual per cylinder
+- EGT residual per cylinder
+- Oil-pressure residual
+- Oil-temperature residual
+- Vibration residual
+- Other important residuals when available
+
+The dashboard visualizes Twin outputs.
+
+It must never pretend to be the authoritative physics engine.
+
+======================================================================
+10. AI / DIAGNOSTICS TAB
+======================================================================
+
+DISPLAY AI/ML OUTPUTS
+---------------------
+
+- Anomaly Score
+- Fault Detection
+- Fault Classification
+- Fault Confidence
+- Fault Severity
+- Degradation Status
+- RUL / Remaining Useful Life
+- Prediction Status
+- Model Confidence
+- Uncertainty where available
+- Diagnostic explanation/evidence
+- Active diagnostic alerts
+
+EXAMPLE
+-------
+
+PRIMARY HYPOTHESIS
+Injector Abnormality
+
+ANOMALY SCORE
+0.82
+
+CONFIDENCE
+91%
+
+SEVERITY
+HIGH
+
+DEGRADATION
+MODERATE
+
+RUL
+Model-defined value/unit
+
+RULES
+-----
+
+Do NOT hard-code RUL to minutes or hours.
+
+Do NOT present mock AI results as real validated AI predictions.
+
+Clearly identify demo/mock output where appropriate.
+
+======================================================================
+11. ALERT / NOTIFICATION SYSTEM
+======================================================================
+
+Build a proper event/alert system.
+
+SEVERITY
+--------
+
+- INFO
+- WARNING
+- HIGH
+- CRITICAL
+
+ALERT MODEL
+-----------
+
+Each alert should contain:
+
+- Alert ID
+- Timestamp
+- Severity
+- Title
+- Description
+- Source
+- Related parameter
+- Related subsystem
+- Current value
+- Expected/threshold value where applicable
+- Acknowledge state
+- Active/resolved state
+
+FEATURES
+--------
+
+- Persistent alert indicator
+- Active alert count
+- Alert panel/drawer
+- Alert history
+- Acknowledge
+- Clear/resolved state
+- Severity filtering
+- Timestamp
+- Link to relevant diagnostic
+- Link to relevant Twin view
+
+NORMAL
+------
+
+No active alert.
+
+FAULT
+-----
+
+Alert appears.
+Main dashboard status changes.
+Relevant telemetry is highlighted.
+Twin indicates affected subsystem.
+Diagnostics update.
+Maintenance advisory updates.
+
+Avoid excessive flashing/animation.
+
+Critical alerts should be obvious without becoming visually distracting.
+
+======================================================================
+12. MAINTENANCE ADVISORY TAB
+======================================================================
+
+Display decision-support information.
+
+EXAMPLE
+-------
+
+MAINTENANCE ADVISORY
+
+Injector inspection recommended
+
+Reason:
+Abnormal EGT + vibration pattern
+
+DISPLAY
+-------
+
+- Advisory ID
+- Severity
+- Subsystem
+- Reason
+- Supporting telemetry
+- Supporting residuals
+- Diagnostic evidence
+- Recommended inspection/action
+- Operational advisory
+- Timestamp
+- Status
+
+IMPORTANT
+---------
+
+The dashboard presents decision support.
+
+It must not directly issue autonomous flight-control commands.
+
+Any throttle derating/RTH or operational recommendation is advisory unless
+the larger system explicitly defines another certified control architecture.
+
+======================================================================
+13. MISSION REPLAY TAB
+======================================================================
+
+Build the UI foundation for mission replay.
+
+DISPLAY
+-------
+
+- Mission selector
+- Mission ID
+- Mission name
+- Mission status
+- Mission timeline
+- Play
+- Pause
+- Stop
+- Reset
+- Replay progress
+- Current replay timestamp
+- Telemetry synchronized with replay position
+- Health synchronized with replay position
+- Fault/anomaly markers
+- Mission phase markers
+- Event markers
+
+Replay supports:
+
+- Post-flight analysis
+- Fault evolution
+- Mission-phase correlation
+- Historical health review
+
+ARCHITECTURAL BOUNDARY
+----------------------
+
+The authoritative replay engine belongs to the backend/scenario/mission
+layer, not React.
+
+MVP CLIENT REPLAY BUFFER
+------------------------
+
+Before the backend replay engine exists, the Data Adapter may maintain a
+small bounded in-memory circular telemetry buffer.
+
+Purpose:
+
+- Demonstrate Play
+- Demonstrate Pause
+- Demonstrate Scrub
+- Demonstrate Reset
+- Demonstrate timeline movement
+- Demonstrate telemetry/health synchronization
+
+This is an MVP demonstration mechanism only.
+
+Production architecture:
+
+Backend Replay Engine
+        ↓
+Replay API / WebSocket
+        ↓
+Data Adapter
+        ↓
+Dashboard
+
+MVP architecture:
+
+Mock Telemetry
+        ↓
+Client Circular Buffer
+        ↓
+Replay Controller
+        ↓
+Dashboard
+
+The client replay buffer must be replaceable without changing the replay UI.
+
+======================================================================
+14. TWIN VIEW TAB — HIGH PRIORITY
+======================================================================
+
+GOAL
+----
+
+Create an impressive interactive cyber-physical representation of the engine.
+
+IMPORTANT
+---------
+
+This is NOT required to be a CAD model in the MVP.
+
+MVP VISUALIZATION
+-----------------
+
+Use:
+
+- Three.js
+- React Three Fiber
+- WebGL
+- Drei
+- Procedural/primitive geometry
+- State-driven animation
+
+The virtual engine can be constructed from:
+
+- Cylinders
+- Boxes
+- Spheres
+- Torus geometry
+- Lines/pipes
+- Instanced geometry
+- Other procedural Three.js objects
+
+VISUAL STATES
+-------------
+
+NORMAL
+- Stable engine animation
+- Nominal indicators
+- Normal subsystem states
+
+OVERHEATING
+- Thermal state visualization changes
+- Temperature indicator rises
+- Affected cylinder/region highlighted
+
+MISFIRE
+- Combustion animation becomes abnormal
+- Affected cylinder highlighted
+- Engine state changes
+- Fault indicator appears
+
+INJECTOR ABNORMALITY
+- Fuel/injection subsystem highlighted
+- Related diagnostic status shown
+- Relevant cylinder may be highlighted when data supports it
+
+LUBRICATION ISSUE
+- Lubrication subsystem highlighted
+- Oil condition displayed as degraded
+
+ABNORMAL VIBRATION
+- Engine vibration animation increases
+- Vibration indicator changes
+
+SENSOR DRIFT
+- Sensor/channel indication shows abnormality
+- Physical engine visualization must NOT falsely imply a physical engine
+  change if only the sensor is faulty
+
+STATE-DRIVEN DESIGN
+-------------------
+
+The 3D renderer should consume a normalized Twin visualization state:
+
+{
+  "engine_state": "DEGRADED",
+  "health_index": 71,
+  "rpm": 5200,
+  "thermal_state": "ELEVATED",
+  "combustion_state": "ABNORMAL",
+  "lubrication_state": "NOMINAL",
+  "vibration_state": "HIGH",
+  "active_fault": "INJECTOR_ABNORMALITY"
+}
+
+The renderer maps state to visual behavior.
+
+The renderer does NOT decide the diagnosis.
+
+======================================================================
+15. 3D ASSET MODULARITY
+======================================================================
+
+The 3D renderer must be independent from the asset pipeline.
+
+MVP:
+
+Procedural Three.js model
+        ↓
+Twin Renderer
+
+Future:
+
+CAD / external 3D source
+        ↓
+Optimized GLB/GLTF
+        ↓
+Asset Loader
+        ↓
+Twin Renderer
+
+The current dashboard must NOT depend on Blender.
+
+The current dashboard must NOT depend on SolidWorks.
+
+If a high-fidelity asset becomes available later, it replaces the asset
+adapter/model without requiring the Twin View to be rebuilt.
+
+DO NOT make Blender a required runtime dependency.
+
+======================================================================
+16. CYBER-PHYSICAL SYNCHRONIZATION VISUALIZATION
+======================================================================
+
+Make the relationship between incoming telemetry and the virtual Twin obvious.
+
+VISUAL FLOW
+-----------
+
+Telemetry
+   ↓
+Synchronization
+   ↓
+Virtual Engine State
+
+DISPLAY
+-------
+
+- Last synchronized timestamp
+- Telemetry age
+- Measured latency where available
+- Data source
+- Twin status
+- Model version
+- Telemetry schema version
+- Frame/sequence number where available
+
+Do not claim a latency target unless measured.
+
+Recommended status states:
+
+CONNECTED
+SYNCING
+DELAYED
+DATA STALE
+DISCONNECTED
+TWIN UNAVAILABLE
+
+======================================================================
+17. DASHBOARD DATA MODEL
+======================================================================
+
+The dashboard must use a normalized internal data model.
+
+Example high-level structure:
+
+DashboardState
+  ├── telemetry
+  ├── health
+  ├── diagnostics
+  ├── alerts
+  ├── advisory
+  ├── mission
+  ├── replay
+  ├── scenario
+  ├── twin
+  └── connection
+
+TELEMETRY MODEL
+---------------
+
+{
+  "timestamp": "...",
+  "frame_id": 12345,
+  "rpm": 5200,
+  "map": 1.42,
+  "cht": [132.4, 135.1, 133.0, 138.2],
+  "egt": [815.0, 822.4, 810.2, 829.0],
+  "oil_pressure": 4.1,
+  "oil_temperature": 92.0,
+  "fuel_flow": 18.2,
+  "vibration": 0.37,
+  "battery_voltage": 24.4,
+  "alternator_current": 11.8,
+  "injection_timing": 18.5
+}
+
+Units and exact ranges must be defined in the formal telemetry specification.
+
+======================================================================
+18. TELEMETRY FIELD NAMES — CANONICAL VOCABULARY
+======================================================================
+
+Use one shared vocabulary at interfaces.
+
+CORE FIELDS
+-----------
+
+timestamp
+frame_id
+rpm
+map
+cht
+egt
+oil_pressure
+oil_temperature
+fuel_flow
+vibration
+battery_voltage
+alternator_current
+injection_timing
+
+CYLINDER FIELDS
+---------------
+
+cht = array
+egt = array
+
+Example:
+
+cht[0] = Cylinder 1 CHT
+cht[1] = Cylinder 2 CHT
+cht[2] = Cylinder 3 CHT
+cht[3] = Cylinder 4 CHT
+
+egt follows the same convention.
+
+ENGINE CONFIGURATION
+--------------------
+
+The schema should support:
+
+- engine identifier
+- engine model/configuration
+- cylinder count
+- telemetry schema version
+- unit system
+- source metadata
+
+IMPORTANT
+---------
+
+Internal variable names inside Python, AI, MATLAB, or React can differ.
+
+The shared API/schema names must remain consistent.
+
+Do not invent alternate interface field names in separate modules.
+
+======================================================================
+19. OPTIONAL CONTEXT TELEMETRY
+======================================================================
+
+MAP and engine telemetry are easier to interpret when operating context is
+available.
+
+The architecture should allow future addition of:
+
+- Throttle position
+- Engine load
+- Manifold/ambient pressure context
+- Ambient temperature
+- Ambient pressure
+- Altitude
+- Humidity where available
+- Mission phase
+- Aircraft airspeed
+- Fuel quantity
+- Electrical system status
+- ECU/flight-controller status
+
+These are extension fields, not a reason to redesign the dashboard.
+
+======================================================================
+20. DASHBOARD DATA LAYER
+======================================================================
+
+Create a dedicated data/service layer.
+
+RECOMMENDED STRUCTURE
+---------------------
+
+dashboard/
+  src/
+    app/
+    pages/
+    components/
+    services/
+      api/
+      websocket/
+      scenario/
+      mission/
+      replay/
+    adapters/
+      mock/
+      api/
+      websocket/
+    models/
+    stores/
+    hooks/
+    visualization/
+      charts/
+      twin/
+    utils/
+    assets/
+    tests/
+
+DATA FLOW
+---------
+
+Mock:
+
+Mock Data
+   ↓
+Mock Adapter
+   ↓
+Normalized Dashboard Model
+   ↓
+Zustand/Application State
+   ↓
+UI
+
+Integration:
+
+Backend
+   ↓
+API/WebSocket Service
+   ↓
+Backend Adapter
+   ↓
+Normalized Dashboard Model
+   ↓
+Zustand/Application State
+   ↓
+UI
+
+The UI must never know whether the source is mock, Gazebo, backend, Twin Core,
+or real UAV telemetry.
+
+======================================================================
+21. ADAPTER CONTRACT — KEY TO MODULARITY
+======================================================================
+
+Every data source must implement the same conceptual adapter interface.
+
+Example:
+
+TelemetryAdapter
+----------------
+- connect()
+- disconnect()
+- getCurrent()
+- subscribe()
+- unsubscribe()
+- getHistory()
+
+ScenarioAdapter
+---------------
+- listScenarios()
+- selectScenario()
+- stopScenario()
+- resetScenario()
+
+MissionAdapter
+--------------
+- listMissions()
+- getMission()
+- startReplay()
+- pauseReplay()
+- stopReplay()
+- seekReplay()
+
+TwinAdapter
+-----------
+- getTwinState()
+- subscribeTwinState()
+
+DiagnosticsAdapter
+------------------
+- getDiagnostics()
+- subscribeDiagnostics()
+
+The actual implementation can change.
+
+Examples:
+
+MockTelemetryAdapter
+API telemetry adapter
+WebSocket telemetry adapter
+
+The UI does not change.
+
+======================================================================
+22. SERVICE / API LAYER
+======================================================================
+
+Initial endpoints can include:
+
+GET  /api/telemetry/current
+GET  /api/telemetry/history
+
+GET  /api/health
+
+GET  /api/diagnostics
+GET  /api/prognostics/rul
+
+GET  /api/scenarios
+POST /api/scenarios/select
+
+GET  /api/missions
+GET  /api/missions/{id}
+
+POST /api/missions/replay
+
+Future real-time interface:
+
+WebSocket /ws/telemetry
+
+Potential future streams:
+
+WebSocket /ws/alerts
+WebSocket /ws/diagnostics
+WebSocket /ws/twin
+
+The exact API contract must be frozen before large-scale integration.
+
+======================================================================
+23. API CONTRACT RULES
+======================================================================
+
+1. API payloads must be versioned.
+2. Field names must be stable.
+3. Units must be explicit.
+4. Timestamps must be machine-readable.
+5. Arrays must have defined ordering.
+6. Missing data must have defined representation.
+7. Invalid data must not silently become zero.
+8. Data source should be identifiable.
+9. Schema changes require version updates when breaking.
+10. Frontend must tolerate unavailable optional fields.
+11. Backend validation is authoritative for incoming API data.
+12. Frontend validation should protect rendering/runtime safety.
+
+Recommended contract artifacts:
+
+docs/
+  specifications/
+    telemetry.schema.json
+    dashboard-api.yaml
+
+The OpenAPI definition should be used to keep backend and frontend contracts
+synchronized.
+
+======================================================================
+24. FRONTEND TECH STACK — FINAL
+======================================================================
+
+PRIMARY
+-------
+
+- React
+- Vite
+- TypeScript
+- HTML5
+- CSS
+- WebGL
+
+UI / STYLING
+------------
+
+- Tailwind CSS
+- shadcn/ui
+- Lucide React
+
+STATE
+-----
+
+- Zustand
+
+HIGH-FREQUENCY CHARTS
+---------------------
+
+- uPlot
+
+3D DIGITAL TWIN
+---------------
+
+- Three.js
+- React Three Fiber
+- Drei
+- WebGL
+
+TESTING
+-------
+
+- Vitest
+- React Testing Library
+
+CODE QUALITY
+------------
+
+- ESLint
+- Prettier
+
+API CONTRACT
+------------
+
+- OpenAPI
+- Generated TypeScript types where practical
+
+======================================================================
+25. BACKEND / INTEGRATION STACK
+======================================================================
+
+PRIMARY
+-------
+
+- Python
+- FastAPI
+- Pydantic
+- Uvicorn
+- AsyncIO
+
+RESPONSIBILITIES
+----------------
+
+- API layer
+- Dashboard data delivery
+- Scenario control interface
+- Telemetry routing
+- Twin integration
+- AI integration
+- Mission/replay integration
+- Alert/event delivery
+- WebSocket streaming
+- Backend-side validation
+
+IMPORTANT
+---------
+
+Do NOT put Digital Twin physics equations into the dashboard backend merely
+because it is convenient.
+
+The authoritative physics model belongs to the Digital Twin Core.
+
+The dashboard backend is an integration/application layer.
+
+======================================================================
+26. DATA / STORAGE STACK
+======================================================================
+
+MVP
+---
+
+- In-memory data
+- JSON
+- CSV
+
+NEXT STAGE
+----------
+
+- SQLite
+
+SCALABLE STAGE
+--------------
+
+- PostgreSQL
+- Appropriate time-series storage if telemetry volume requires it
+
+The dashboard should interact with storage through a service/repository
+boundary rather than direct database calls from React components.
+
+======================================================================
+27. 3D DIGITAL TWIN STACK — FINAL
+======================================================================
+
+MVP REQUIRED
+------------
+
+- Three.js
+- React Three Fiber
+- Drei
+- WebGL
+- Procedural geometry
+- State-driven animation
+
+NOT REQUIRED
+------------
+
+- Blender
+- SolidWorks
+- CAD runtime software
+
+FUTURE
+------
+
+- GLB/GLTF assets
+- Higher-fidelity engine geometry
+- Component-level visualization
+- Advanced materials
+- Camera controls
+- Exploded/X-ray views if useful
+- Gazebo synchronization
+
+======================================================================
+28. DEVELOPMENT INDEPENDENCE
+======================================================================
+
+The dashboard must be independently developable.
+
+It must run without:
+
+- MATLAB
+- Simulink
+- SolidWorks
+- Blender
+- Gazebo
+- Trained AI
+- Real UAV
+- Real engine
+
+Development mode uses:
+
+Mock data
+   ↓
+Mock adapters
+   ↓
+Dashboard
+
+This allows dashboard members to work immediately.
+
+======================================================================
+29. MOCK DATA ARCHITECTURE
+======================================================================
+
+Mock data must behave like real data.
+
+Do NOT create one-off UI values such as:
+
+if fault:
+    show red card
+
+Instead:
+
+Mock Scenario
+   ↓
+Mock Telemetry
+   ↓
+Mock Twin Output
+   ↓
+Mock Diagnostics
+   ↓
+Mock Health
+   ↓
+Mock Alert
+   ↓
+Dashboard
+
+This makes the demonstration structurally similar to the real system.
+
+======================================================================
+30. MOCK SCENARIO DATA REQUIREMENTS
+======================================================================
+
+NORMAL
+------
+
+- Stable RPM
+- Stable MAP
+- Balanced CHT
+- Balanced EGT
+- Normal oil pressure
+- Normal oil temperature
+- Normal fuel flow
+- Normal vibration
+- Healthy electrical system
+- Healthy injection timing
+- Health index near nominal
+
+MISFIRE
+-------
+
+- Cylinder-specific combustion abnormality
+- Corresponding CHT/EGT behavior
+- RPM disturbance where appropriate
+- Vibration change where appropriate
+- Residual increase
+- Diagnostic indication
+
+INJECTOR ABNORMALITY
+--------------------
+
+- Cylinder-specific thermal/combustion deviation
+- Relevant fuel/injection behavior
+- Residual increase
+- Diagnostic indication
+
+LUBRICATION ISSUE
+-----------------
+
+- Oil pressure/temperature degradation
+- Associated residuals
+- Health degradation
+- Maintenance advisory
+
+OVERHEATING
+-----------
+
+- CHT/EGT elevation
+- Thermal trend
+- Health degradation
+- Warning/critical alert depending on severity
+
+SENSOR DRIFT
+------------
+
+- Sensor value becomes biased
+- Physical engine state should remain logically distinct
+- Sensor-health diagnostic should identify the channel
+- 3D Twin should not falsely animate a physical fault
+
+ABNORMAL VIBRATION
+------------------
+
+- Vibration increase/pattern change
+- Potential supporting telemetry changes
+- Health degradation
+- Diagnostic indication
+
+======================================================================
+31. VISUAL DESIGN REQUIREMENTS
+======================================================================
+
+DESIGN TARGET
+-------------
+
+Professional aerospace / engine reliability command center.
+
+CHARACTERISTICS
+---------------
+
+- Dark technical interface
+- Clear hierarchy
+- High information density without clutter
+- Strong status visualization
+- Consistent typography
+- Consistent units
+- Consistent severity states
+- High-performance charts
+- Minimal unnecessary decoration
+- Responsive layout
+- Fast interactions
+- Clear active-tab state
+- Engineering-oriented information presentation
+
+AVOID
+-----
+
+- Generic IoT-dashboard appearance
+- Excessive gradients
+- Huge blocks of text
+- Too many gauges
+- Decorative 3D effects with no information value
+- Fake AI claims
+- Fake precision
+- Unmeasured latency claims
+- Hardcoded scenario behavior inside visual components
+
+======================================================================
+32. COMPONENT ARCHITECTURE
+======================================================================
+
+Use feature/domain-oriented components.
+
+Suggested structure:
+
+src/
+  components/
+    layout/
+    common/
+    telemetry/
+      TelemetryCard
+      CylinderTemperaturePanel
+      TelemetryStatus
+    health/
+      HealthIndex
+      EngineState
+    alerts/
+      AlertIndicator
+      AlertPanel
+      AlertItem
+    trends/
+      TrendChart
+      ChartToolbar
+      TimeRangeSelector
+    scenarios/
+      ScenarioSelector
+      ScenarioCard
+    twin-analysis/
+      ActualExpectedChart
+      ResidualPanel
+    diagnostics/
+      DiagnosticSummary
+      FaultCard
+      AnomalyScore
+      RULCard
+    maintenance/
+      AdvisoryCard
+    mission/
+      MissionSelector
+      MissionTimeline
+      ReplayControls
+    twin/
+      TwinCanvas
+      EngineModel
+      CylinderModel
+      SubsystemIndicator
+      TwinStatusOverlay
+
+Each component should have one clear responsibility.
+
+======================================================================
+33. PAGE ARCHITECTURE
+======================================================================
+
+pages/
+
+MainDashboardPage
+LiveTelemetryPage
+TelemetryTrendsPage
+ScenarioControlPage
+TwinAnalysisPage
+DiagnosticsPage
+MaintenancePage
+MissionReplayPage
+TwinViewPage
+
+Pages compose reusable components.
+
+Pages should not contain raw API calls.
+
+Pages should not contain physics.
+
+Pages should not contain AI model logic.
+
+======================================================================
+34. STATE MANAGEMENT ARCHITECTURE
+======================================================================
+
+Use Zustand stores by domain or bounded context.
+
+Suggested:
+
+stores/
+  telemetryStore
+  healthStore
+  alertStore
+  scenarioStore
+  diagnosticsStore
+  maintenanceStore
+  missionStore
+  replayStore
+  twinStore
+  connectionStore
+
+Avoid creating one enormous global store containing every implementation
+detail.
+
+Each store should expose only the state/actions required by its domain.
+
+======================================================================
+35. CONNECTION STATE MACHINE
+======================================================================
+
+The dashboard must explicitly model connection/data states.
+
+STATES
+------
+
+CONNECTING
+CONNECTED
+DELAYED
+DATA_STALE
+DISCONNECTED
+INVALID_DATA
+TWIN_UNAVAILABLE
+AI_UNAVAILABLE
+
+The UI must distinguish:
+
+"No data"
+
+from:
+
+"Zero value"
+
+These are not the same condition.
+
+======================================================================
+36. VERSIONING / TRACEABILITY
+======================================================================
+
+Display or make available:
+
+- Dashboard version
+- Telemetry schema version
+- Twin model version
+- AI model version
+- Scenario version
+- Data source
+- API version where appropriate
+
+This supports reproducibility and future aerospace-oriented development.
+
+======================================================================
+37. SECURITY / ENGINEERING PRACTICES
+======================================================================
+
+MVP
+---
+
+- Do not expose secrets in frontend code
+- Use environment variables for configurable endpoints
+- Validate API input
+- Validate telemetry fields
+- Do not trust client-side scenario values blindly
+- Restrict CORS for real deployment
+- Log important events
+- Control dependency versions
+- Avoid unsafe dynamic HTML
+- Keep sensitive data out of browser storage unless required
+
+FUTURE
+------
+
+- Authentication
+- Authorization
+- TLS
+- Secure telemetry transport
+- Audit logs
+- Signed/versioned models
+- Stronger cybersecurity controls
+
+======================================================================
+38. PERFORMANCE REQUIREMENTS
+======================================================================
+
+The dashboard should be designed for high-rate telemetry.
+
+TARGETS
+-------
+
+Design for:
+
+- 20–50 Hz telemetry visualization where required
+- Smooth chart updates
+- Minimal unnecessary React re-renders
+- Bounded in-memory buffers
+- Efficient data decimation/windowing
+- Efficient 3D rendering
+
+IMPORTANT
+---------
+
+Do not claim a specific end-to-end latency such as "<20 ms" unless measured.
+
+Measure:
+
+- Backend delivery latency
+- Data adapter processing time
+- Chart update time
+- 3D update time
+- End-to-end dashboard latency
+
+Use profiling before optimizing.
+
+======================================================================
+39. PERFORMANCE MODULARITY
+======================================================================
+
+Keep high-rate data separate from low-rate UI state.
+
+Example:
+
+High-rate:
+- Telemetry samples
+- Chart buffers
+- 3D animation state
+
+Lower-rate:
+- Fault classification
+- Maintenance advisory
+- Mission metadata
+- Configuration
+- Version information
+
+Do not force the entire React application to re-render for every telemetry
+sample.
+
+Use bounded buffers and targeted subscriptions.
+
+======================================================================
+40. JURY DEMONSTRATION FLOW
+======================================================================
+
+STEP 1
+------
+
+Open Main Dashboard.
+
+Show:
+
+- Engine healthy
+- Live telemetry
+- Health index
+- Twin online
+- No active alerts
+
+STEP 2
+------
+
+Open Twin View.
+
+Show:
+
+- Animated virtual engine
+- Live state
+- Health
+- RPM
+- Cylinder/subsystem indicators
+
+STEP 3
+------
+
+Open Scenario Control.
+
+Select:
+
+INJECTOR ABNORMALITY
+
+STEP 4
+------
+
+Observe telemetry change.
+
+STEP 5
+------
+
+Observe:
+
+- Physics residual increases
+- Health index decreases
+- Anomaly score increases
+- Fault classification appears
+
+STEP 6
+------
+
+Alert appears.
+
+STEP 7
+------
+
+Twin View changes:
+
+- Relevant subsystem highlighted
+- Affected cylinder highlighted where supported
+- Engine state becomes degraded
+
+STEP 8
+------
+
+Open AI / Diagnostics.
+
+Show:
+
+- Fault
+- Confidence
+- Severity
+- Anomaly score
+- Degradation
+- RUL if available
+
+STEP 9
+------
+
+Open Maintenance Advisory.
+
+Show resulting advisory.
+
+STEP 10
+-------
+
+Open Trends / Mission Replay.
+
+Show how the fault evolved over time.
+
+STEP 11
+-------
+
+Return to NORMAL.
+
+Show appropriate recovery.
+
+======================================================================
+41. TESTING REQUIREMENTS
+======================================================================
+
+UNIT TESTS
+----------
+
+Test:
+
+- Components render correctly
+- Domain models map correctly
+- Adapters normalize correctly
+- Stores update correctly
+- Scenario selection works
+- Alert state transitions work
+- Replay controls work
+- Data validation works
+
+INTEGRATION TESTS
+-----------------
+
+Test:
+
+- API response maps correctly to UI model
+- Scenario API changes dashboard state
+- Telemetry stream updates UI
+- Diagnostics update correctly
+- Alert generation/clearing works
+- Replay state synchronizes with telemetry
+- Twin state synchronizes with telemetry
+- Connection failures are handled
+
+VISUAL TESTS
+------------
+
+Test:
+
+- Nominal state
+- Warning state
+- Critical state
+- Misfire
+- Injector abnormality
+- Lubrication issue
+- Overheating
+- Sensor drift
+- Abnormal vibration
+- No-alert state
+- Connection-loss state
+- Stale-data state
+
+PERFORMANCE TESTS
+-----------------
+
+Test:
+
+- 20 Hz telemetry
+- 50 Hz telemetry where required
+- Long-running chart buffers
+- Large replay datasets
+- 3D animation under telemetry load
+- Multiple active alerts
+
+======================================================================
+42. FAILURE / GRACEFUL DEGRADATION
+======================================================================
+
+The dashboard must remain usable when services fail.
+
+EXAMPLES
+--------
+
+Backend unavailable:
+- Show connection status
+- Preserve available local UI
+- Do not display stale data as current
+
+AI unavailable:
+- Telemetry remains available
+- Twin analysis remains available if available
+- AI section explicitly shows unavailable
+
+Twin unavailable:
+- Telemetry remains available
+- Diagnostics remain available if available
+- 3D Twin indicates unavailable
+
+Data stale:
+- Show age
+- Do not pretend it is live
+
+Invalid telemetry:
+- Reject or quarantine invalid data
+- Show validation state
+- Do not silently convert invalid values to zero
+
+======================================================================
+43. DEVELOPMENT WORKFLOW FOR TWO DASHBOARD MEMBERS
+======================================================================
+
+MEMBER A — UI / UX + CORE APPLICATION
+-------------------------------------
+
+Own:
+
+- Main Dashboard
+- Navigation/tabs
+- Telemetry cards
+- Cylinder panels
+- Health status
+- Alert UI
+- Scenario control UI
+- Maintenance advisory UI
+- Layout
+- Responsive styling
+- Shared components
+- Application shell
+
+MEMBER B — DATA VISUALIZATION + TWIN
+-------------------------------------
+
+Own:
+
+- uPlot telemetry charts
+- Trend engine
+- Twin Analysis
+- AI/Diagnostics visualization
+- Mission Replay UI
+- Three.js Twin View
+- 3D state visualization
+- Data Adapter
+- Replay buffer
+
+SHARED
+------
+
+Both members coordinate on:
+
+- Domain models
+- Telemetry schema
+- API contract
+- Zustand state boundaries
+- Component interfaces
+- Mock data
+- Git branches/PRs
+- Integration tests
+
+======================================================================
+44. GIT / BRANCHING RECOMMENDATION
+======================================================================
+
+main
+  |
+  +-- feature/dashboard-ui
+  |
+  +-- feature/dashboard-visualization
+  |
+  +-- feature/dashboard-data-adapter
+
+Rules:
+
+- Do not directly develop major features on main.
+- Keep main stable.
+- Use feature branches.
+- Commit small logical changes.
+- Open pull requests.
+- Review before merging.
+- Keep the shared contract synchronized.
+
+======================================================================
+45. MVP DEVELOPMENT ORDER
+======================================================================
+
+PHASE 1 — FOUNDATION
+--------------------
+
+1. Create React + Vite + TypeScript project.
+2. Install Tailwind + shadcn/ui.
+3. Configure ESLint + Prettier.
+4. Create page/layout system.
+5. Create domain model types.
+6. Create mock adapter.
+7. Create Zustand stores.
+
+PHASE 2 — CORE DASHBOARD
+------------------------
+
+1. Main Dashboard
+2. Navigation
+3. Telemetry cards
+4. Health index
+5. Alerts
+6. Connection state
+
+PHASE 3 — TELEMETRY
+-------------------
+
+1. Live telemetry
+2. Cylinder CHT/EGT
+3. MAP
+4. uPlot trend engine
+5. Historical buffer
+
+PHASE 4 — SCENARIO SYSTEM
+-------------------------
+
+1. Scenario selector
+2. Mock scenario adapter
+3. State transitions
+4. Alert integration
+5. Health integration
+
+PHASE 5 — TWIN / AI
+-------------------
+
+1. Twin Analysis
+2. Diagnostics
+3. Maintenance advisory
+4. 3D Twin
+5. State-driven animations
+
+PHASE 6 — REPLAY
+----------------
+
+1. Circular buffer
+2. Replay controller
+3. Timeline
+4. Fault markers
+5. Mission synchronization
+
+PHASE 7 — INTEGRATION
+---------------------
+
+1. Backend API adapter
+2. WebSocket adapter
+3. API contract validation
+4. Replace mock data
+5. Integration testing
+
+======================================================================
+46. DEFINITION OF DONE — FIRST SIH INTEGRATION
+======================================================================
+
+The dashboard is ready for first SIH integration when:
+
+1. Every major tab works.
+2. All required telemetry fields are represented.
+3. MAP is included.
+4. CHT is cylinder-aware.
+5. EGT is cylinder-aware.
+6. Scenario buttons work with mock/synthetic data.
+7. Alerts visibly respond to scenarios.
+8. Health status changes according to test data.
+9. Trends update dynamically.
+10. uPlot handles the intended telemetry rate in local testing.
+11. Twin Analysis displays actual/expected/residual data.
+12. AI/Diagnostics consumes structured diagnostic output.
+13. Maintenance Advisory consumes structured advisory output.
+14. Mission Replay UI works with the MVP replay buffer.
+15. Three.js Twin View reacts to engine state.
+16. Mock data can be replaced by backend data through adapters.
+17. No UI component contains physics/AI logic.
+18. Shared field names follow the canonical telemetry schema.
+19. Connection/data failure states are visible.
+20. Dashboard/schema/model versions are traceable.
+21. Frontend tests pass.
+22. Integration tests pass.
+23. The dashboard can integrate with the real Digital Twin Core without
+    redesigning its application architecture.
+
+======================================================================
+47. FINAL MODULARITY TEST
+======================================================================
+
+The architecture is considered genuinely modular only if these replacements
+can happen independently:
+
+REPLACEMENT A
+-------------
+
+Mock telemetry
+    ↓
+Real telemetry API
+
+WITHOUT changing UI components.
+
+REPLACEMENT B
+-------------
+
+REST polling
+    ↓
+WebSocket streaming
+
+WITHOUT changing telemetry cards.
+
+REPLACEMENT C
+-------------
+
+Client replay buffer
+    ↓
+Backend replay engine
+
+WITHOUT redesigning the Mission Replay UI.
+
+REPLACEMENT D
+-------------
+
+Procedural Three.js engine
+    ↓
+Future GLB/GLTF engine asset
+
+WITHOUT rewriting Twin state logic.
+
+REPLACEMENT E
+-------------
+
+Mock diagnostics
+    ↓
+Real AI/ML diagnostics
+
+WITHOUT changing the Diagnostics page structure.
+
+REPLACEMENT F
+-------------
+
+SQLite
+    ↓
+PostgreSQL/time-series storage
+
+WITHOUT changing React components.
+
+If these replacements require rebuilding the dashboard, the architecture is
+not sufficiently modular.
+
+======================================================================
+48. FINAL ARCHITECTURE
+======================================================================
+
+                         DASHBOARD APPLICATION
+                                  |
+              +-------------------+-------------------+
+              |                   |                   |
+          PRESENTATION       APPLICATION STATE    VISUALIZATION
+              |                   |                   |
+       React + TS            Zustand             uPlot
+       Tailwind              Domain Models       Three.js/R3F
+       shadcn/ui                                  WebGL
+              |                   |                   |
+              +-------------------+-------------------+
+                                  |
+                           DATA ADAPTER LAYER
+                                  |
+              +-------------------+-------------------+
+              |                   |                   |
+            MOCK              REST API            WebSocket
+              |                   |                   |
+              +-------------------+-------------------+
+                                  |
+                            BACKEND SERVICES
+                                  |
+              +-------------------+-------------------+
+              |                   |                   |
+        Telemetry Gateway     Digital Twin Core     AI/ML
+              |                   |                   |
+              +-------------------+-------------------+
+                                  |
+                       Mission / Scenario Services
+                                  |
+                              Storage
+
+
+3D ASSET PATH
+
+Procedural Geometry
+        OR
+Future GLB/GLTF Asset
+        ↓
+Asset Adapter
+        ↓
+Three.js / React Three Fiber
+        ↓
+State-driven Twin Renderer
+
+
+REPLAY PATH
+
+MVP:
+Mock Telemetry
+    ↓
+Circular Buffer
+    ↓
+Replay Controller
+    ↓
+Dashboard
+
+FUTURE:
+Mission Data
+    ↓
+Backend Replay Engine
+    ↓
+Replay API/WebSocket
+    ↓
+Data Adapter
+    ↓
+Dashboard
+
+
+======================================================================
+49. FINAL TECHNOLOGY STACK
+======================================================================
+
+| Layer | Technology | Role |
+|------|------------|------|
+| Frontend | React | Application UI |
+| Build | Vite | Development/build tooling |
+| Language | TypeScript | Type safety |
+| Styling | Tailwind CSS | Utility styling |
+| Components | shadcn/ui | Reusable UI components |
+| Icons | Lucide React | UI icons |
+| State | Zustand | Application state |
+| Charts | uPlot | High-frequency time-series |
+| 3D | Three.js | 3D rendering |
+| 3D React | React Three Fiber | React integration for Three.js |
+| 3D Helpers | Drei | Reusable 3D utilities |
+| Browser 3D | WebGL | Rendering API |
+| Backend | FastAPI | API/integration layer |
+| Validation | Pydantic | API/data validation |
+| Server | Uvicorn | ASGI server |
+| Async | AsyncIO | Asynchronous processing |
+| Data | Python/NumPy/SciPy | Integration/data processing |
+| AI Integration | PyTorch | Model integration/inference where required |
+| MVP Storage | In-memory/JSON/CSV | Demonstration |
+| Local Storage | SQLite | Prototype history |
+| Scalable Storage | PostgreSQL | Persistent history |
+| API Contract | OpenAPI | Interface definition |
+| Frontend Testing | Vitest | Unit/integration tests |
+| UI Testing | React Testing Library | Component testing |
+| Linting | ESLint | Code quality |
+| Formatting | Prettier | Consistent formatting |
+
+======================================================================
+50. OPEN-SOURCE / COST POSITION
+======================================================================
+
+The dashboard stack is designed to be open-source-first and can be developed
+without paid dashboard software.
+
+Primary dashboard technologies are open-source/free to use under their
+respective licenses.
+
+No Blender dependency is required.
+
+No SolidWorks dependency is required.
+
+No MATLAB dependency is required for dashboard development.
+
+No proprietary 3D runtime is required.
+
+No proprietary dashboard platform is required.
+
+IMPORTANT:
+"₹0 software cost" does not mean every deployment cost is zero. Hardware,
+hosting, infrastructure, proprietary external systems, or future commercial
+services may introduce costs. The dashboard software stack itself is
+open-source-first.
+
+======================================================================
+51. FINAL PRINCIPLE
+======================================================================
+
+BUILD THE DASHBOARD AS A PRODUCT, NOT AS A MOCKUP.
+
+The mock data is temporary.
+
+The UI architecture is permanent.
+
+The dashboard must survive this evolution:
+
+MOCK DATA
+   ↓
+SYNTHETIC TELEMETRY
+   ↓
+TELEMETRY GATEWAY
+   ↓
+DIGITAL TWIN CORE
+   ↓
+AI / DIAGNOSTICS
+   ↓
+MISSION / REPLAY
+   ↓
+REAL UAV DATA
+
+
+The dashboard should NOT be rebuilt at every stage.
+
+Only the implementation behind the stable contracts should evolve.
+
+UPGRADE MODULES.
+DO NOT REBUILD THE SYSTEM.
+
+======================================================================
+END OF DOCUMENT
+======================================================================
