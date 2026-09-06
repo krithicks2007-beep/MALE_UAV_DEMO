@@ -1,0 +1,47 @@
+{
+  "engine": {
+    "timestamp": "2026-09-06T15:15:00Z",
+    "rpm": 5000,
+    "cht": [140.0, 142.0, 141.0, 143.0],
+    "egt": [700.0, 705.0, 698.0, 702.0],
+    "oil_pressure": 1.2,
+    "oil_temperature": 118.0,
+    "fuel_flow": 19.0,
+    "vibration": 3.8,
+    "battery_voltage": 14.0,
+    "alternator_current": 20.0,
+    "injection_timing": 22.0,
+    "engine_load": 0.75,
+    "throttle": 0.75,
+    "health_index": 0.52
+  },
+  "fault": {
+    "fault_code": 4,
+    "fault_name": "Lubrication Issue",
+    "severity": 0.78,
+    "confidence": 0.92,
+    "evidence": 0.88,
+    "active": true,
+    "source": "physics"
+  },
+  "degradation": {
+    "lubrication_degradation": 0.45,
+    "overall_degradation": 0.32,
+    "degradation_rate": 8e-7
+  },
+  "rul": {
+    "rul_hours": 85.0,
+    "rul_normalized": 0.085,
+    "rul_confidence": 0.80,
+    "life_state": 3
+  },
+  "mission": {
+    "mission_phase": "CRUISE",
+    "altitude_m": 3000.0
+  },
+  "ai": {
+    "anomaly_score": 0.85,
+    "anomaly_flag": true,
+    "ml_fault_code": 4
+  }
+}

@@ -1,0 +1,54 @@
+faults:
+  0:
+    name: "Healthy"
+    subsystem: "GENERAL"
+    advisory: "Engine operating within normal envelope. Continue routine monitoring."
+    operational: "Maintain normal mission profile."
+
+  1:
+    name: "Misfire"
+    subsystem: "COMBUSTION"
+    advisory: "Inspect ignition and combustion system before next mission."
+    operational: "Consider reducing continued high-stress operation if severity is high."
+
+  2:
+    name: "Injector Abnormality"
+    subsystem: "FUEL_SYSTEM"
+    advisory: "Inspect injector/fuel delivery system and verify fuel-flow behavior."
+    operational: "Avoid rapid throttle changes; monitor fuel flow and EGT distribution."
+
+  3:
+    name: "Coding Degradation"
+    subsystem: "CONTROL"
+    advisory: "Verify engine control/injection timing and associated parameters."
+    operational: "Monitor ECU injection timing signals and cylinder power balance."
+
+  4:
+    name: "Lubrication Issue"
+    subsystem: "LUBRICATION"
+    advisory: "Inspect oil pressure, oil temperature, oil level and lubrication path before continued operation."
+    operational: "Avoid high-load operation; monitor oil pressure and thermal margins closely."
+
+  5:
+    name: "Sensor Drift/Failure"
+    subsystem: "SENSORS"
+    advisory: "Verify sensor signal, wiring, calibration and sensor health."
+    operational: "Do not interpret a potentially failed sensor as unquestioned physical engine failure."
+
+  6:
+    name: "Combustion Instability"
+    subsystem: "COMBUSTION"
+    advisory: "Inspect combustion, ignition and fuel systems."
+    operational: "Avoid sustained high-throttle operation; monitor vibration and EGT residuals."
+
+  7:
+    name: "Overheating Trend"
+    subsystem: "THERMAL"
+    advisory: "Inspect cooling/thermal system and clean heat exchangers before next flight."
+    operational: "Inspect thermal/cooling system and avoid prolonged high thermal stress where operationally feasible."
+
+  8:
+    name: "Abnormal Vibration"
+    subsystem: "MECHANICAL"
+    advisory: "Inspect mechanical/vibration source, mounts, and propeller assembly before next mission."
+    operational: "Consider avoiding high-stress operating regions; inspect mechanical source."

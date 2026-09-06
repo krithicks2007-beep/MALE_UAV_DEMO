@@ -18,6 +18,14 @@ from .models import (
     MaintenanceAdvisory,
     ScenarioDefinition
 )
+try:
+    from decision_support.engine.decision_engine import DecisionEngine
+    from decision_support.models import (
+        DecisionInput, EngineState, FaultState, DegradationState, RULState, MissionState, AIState
+    )
+    DSS_AVAILABLE = True
+except ImportError:
+    DSS_AVAILABLE = False
 
 
 class DummyAIDiagnosticEngine:
@@ -25,6 +33,8 @@ class DummyAIDiagnosticEngine:
         self.config = config
         self.ai_model_version = config.ai_model_version
         self.health_history: List[float] = [95.0, 94.5, 94.0, 93.8, 93.5, 93.0]
+        self.dss = DecisionEngine() if DSS_AVAILABLE else None
+
 
     def evaluate(
         self,
@@ -622,4 +632,74 @@ class DummyAIDiagnosticEngine:
             model_version=self.config.model_version
         )
 
+        if self.dss:
+            try:
+                fault_code_map = {
+                    "NORMAL": 0,
+                    "MISFIRE": 1,
+                    "INJECTOR_ABNORMALITY": 2,
+                    "LUBRICATION_ISSUE": 4,
+                    "SENSOR_DRIFT": 5,
+                    "OVERHEATING": 7,
+                    "ABNORMAL_VIBRATION": 8,
+                }
+                f_code = fault_code_map.get(sid, 0)
+                dss_inp = DecisionInput(
+                    timestamp=timestamp_str,
+                    engine=EngineState(
+                        timestamp=timestamp_str,
+                        rpm=telemetry.rpm,
+                        cht=telemetry.cht,
+                        egt=telemetry.egt,
+                        oil_pressure=telemetry.oil_pressure,
+                        oil_temperature=telemetry.oil_temperature,
+                        fuel_flow=telemetry.fuel_flow,
+                        vibration=telemetry.vibration,
+                        battery_voltage=telemetry.battery_voltage,
+                        alternator_current=telemetry.alternator_current,
+                        injection_timing=telemetry.injection_timing,
+                        health_index=overall_health / 100.0,
+                    ),
+                    fault=FaultState(
+                        fault_code=f_code,
+                        severity=fault_intensity,
+                        confidence=fault_confidence / 100.0 if fault_confidence > 1.0 else fault_confidence,
+                        active=(f_code > 0),
+                    ),
+                    degradation=DegradationState(
+                        overall_degradation=round(1.0 - (overall_health / 100.0), 3),
+                        degradation_rate=1.2e-6 if fault_intensity > 0.5 else 1.0e-7,
+                    ),
+                    rul=RULState(
+                        rul_hours=demo_rul,
+                        rul_confidence=0.8,
+                    ),
+                    ai=AIState(
+                        anomaly_score=anomaly_score,
+                        anomaly_flag=anomaly_detected,
+                        ml_fault_code=f_code,
+                    ),
+                )
+                dss_res = self.dss.evaluate(dss_inp)
+                if dss_res.decision.risk_level != "LOW" or f_code > 0:
+                    advisory_severity = "CRITICAL" if dss_res.decision.risk_level == "CRITICAL" else "WARNING"
+                    advisories.insert(
+                        0,
+                        MaintenanceAdvisory(
+                            timestamp=timestamp_str,
+                            mission_id=telemetry.mission_id,
+                            advisory_type=f"DSS_{dss_res.decision.risk_level}_ADVISORY",
+                            severity=advisory_severity,  # type: ignore
+                            reason=dss_res.operational.recommendation,
+                            recommended_action=dss_res.maintenance.recommendation,
+                            confidence=round(dss_res.decision.confidence * 100, 1),
+                            related_fault_type=dss_res.fault_assessment.primary_fault or "DSS Engine Evaluation",
+                        ),
+                    )
+            except Exception as dss_err:
+                pass
+
+
+
         return diagnostics, health, twin_state, advisories
+

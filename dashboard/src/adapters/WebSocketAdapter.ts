@@ -74,28 +74,38 @@ export function connectWebSocket(url?: string) {
           useDiagnosticsStore.getState().setTwinAnalysis(frame.twin_analysis);
         }
 
-        // 4. 3D Twin Visualization State
+        // 4. 3D Twin Visualization State & Active Scenario Sync
         if (frame.twin_state) {
           useTwinStore.getState().setTwinState(frame.twin_state);
         }
+        const validScenarios = ['MISFIRE', 'INJECTOR_ABNORMALITY', 'LUBRICATION_ISSUE', 'OVERHEATING', 'SENSOR_DRIFT', 'ABNORMAL_VIBRATION'];
+        if (frame.active_scenario?.id && validScenarios.includes(frame.active_scenario.id)) {
+          useScenarioStore.getState().setActiveScenario(frame.active_scenario.id as ScenarioId);
+        }
+
+
+
 
         // 5. Advisories & Alerts (clear or set)
         const advList = frame.advisories || [];
-        const mappedAlerts: Alert[] = advList.map((adv: any, idx: number) => ({
-          id: `ADV-${idx}-${adv.advisory_type || 'ALERT'}`,
-          timestamp: adv.timestamp,
-          severity: adv.severity || 'WARNING',
-          title: adv.advisory_type || 'Maintenance Advisory',
-          description: `${adv.reason} • Action: ${adv.recommended_action}`,
-          source: 'AI_DIAGNOSTICS',
-          related_parameter: adv.related_fault_type || null,
-          related_subsystem: null,
-          current_value: null,
-          threshold_value: null,
-          acknowledged: false,
-          active: true
-        }));
+        const mappedAlerts: Alert[] = advList
+          .filter((adv: any) => adv.severity !== 'INFO' && adv.advisory_type !== 'DSS_LOW_ADVISORY')
+          .map((adv: any, idx: number) => ({
+            id: `ADV-${idx}-${adv.advisory_type || 'ALERT'}`,
+            timestamp: adv.timestamp,
+            severity: adv.severity || 'WARNING',
+            title: adv.advisory_type || 'Maintenance Advisory',
+            description: `${adv.reason} • Action: ${adv.recommended_action}`,
+            source: 'AI_DIAGNOSTICS',
+            related_parameter: adv.related_fault_type || null,
+            related_subsystem: null,
+            current_value: null,
+            threshold_value: null,
+            acknowledged: false,
+            active: true
+          }));
         useAlertStore.getState().setAlerts(mappedAlerts);
+
 
         // 6. Mission info
         if (frame.flight_context) {
