@@ -1,0 +1,8 @@
+{
+  "nominal_useful_life_hours": 100.0,
+  "base_uncertainty_hours": 4.0,
+  "slope_coefficient": -112.5,
+  "intercept": 112.5,
+  "model_version": "ai-v0.1",
+  "is_trained": true
+}

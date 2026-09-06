@@ -1,0 +1,14 @@
+{
+  "confidence_threshold": 0.6,
+  "model_version": "ai-v0.1",
+  "fault_classes": [
+    "misfire",
+    "injector_abnormality",
+    "lubrication_issue",
+    "sensor_drift",
+    "sensor_failure",
+    "combustion_instability",
+    "overheating",
+    "abnormal_vibration"
+  ]
+}
