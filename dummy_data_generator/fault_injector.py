@@ -188,6 +188,18 @@ class FaultInjector:
                 duration_s=duration_s,
                 active=True
             ),
+            "PROPELLER_ICING": ScenarioDefinition(
+                id="PROPELLER_ICING",
+                scenario_id="SCEN-015",
+                mission_id="MALE-MSN-2026-001",
+                scenario_type="fault",
+                name="Propeller Blade Icing (Cold Blue Glow)",
+                description="Severe sub-zero atmospheric ice accretion on aft pusher propeller blades causing thrust degradation and aerodynamic imbalance. Turns only the propeller cold blue and pulses.",
+                severity="HIGH",
+                affected_component="PROPELLER_BLADES",
+                duration_s=duration_s,
+                active=True
+            ),
             "FULL_AIRFRAME_ALERT": ScenarioDefinition(
                 id="FULL_AIRFRAME_ALERT",
                 scenario_id="SCEN-008",

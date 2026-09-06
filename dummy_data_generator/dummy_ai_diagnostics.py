@@ -377,6 +377,29 @@ class DummyAIDiagnosticEngine:
                 related_fault_type="HIGH_ALTITUDE_ICING"
             ))
 
+        elif (sid == "PROPELLER_ICING" or sid == "PROP_ICING") and fault_intensity > 0.05:
+            mech_health = max(45.0, 96.0 - (42.0 * fault_intensity))
+            primary_fault = "PROPELLER_ICING"
+            fault_confidence = 96.0
+            severity = "HIGH"
+            vibration_state = "ELEVATED"
+            evidence = [
+                "Aft pusher propeller blade leading-edge ice accretion detected",
+                "Pusher propeller aerodynamic thrust efficiency reduced by 34%",
+                "Propeller de-ice heating element boot failure at aft hub",
+                "High-frequency blade rotational aerodynamic imbalance"
+            ]
+            advisories.append(MaintenanceAdvisory(
+                timestamp=timestamp_str,
+                mission_id=telemetry.mission_id,
+                advisory_type="PROP_ICING_ALERT",
+                severity="HIGH",
+                reason="Propeller blade ice accretion at aft pusher hub",
+                recommended_action="Activate propeller electro-thermal de-ice boots and descend to warmer altitude",
+                confidence=96.0,
+                related_fault_type="PROPELLER_ICING"
+            ))
+
         elif sid == "FULL_AIRFRAME_ALERT" and fault_intensity > 0.05:
             therm_health = max(15.0, 92.0 - (75.0 * fault_intensity))
             mech_health = max(15.0, 96.0 - (75.0 * fault_intensity))

@@ -190,11 +190,18 @@ GENERATOR_HTML_CONTENT = """<!DOCTYPE html>
             <div class="text-[10px] text-slate-300 font-mono">Nose Radome / Pitot Glow</div>
           </button>
 
-          <button onclick="applyPreset('HIGH_ALTITUDE_ICING')" class="p-2.5 rounded-xl bg-sky-950/50 hover:bg-sky-900/70 border-2 border-sky-400 text-left transition text-xs shadow-md shadow-sky-900/40">
+          <button onclick="applyPreset('HIGH_ALTITUDE_ICING')" class="p-2.5 rounded-xl bg-sky-950/50 hover:bg-sky-900/70 border border-sky-400 text-left transition text-xs shadow-md shadow-sky-900/40">
             <div class="font-bold text-sky-300 flex items-center gap-1">
-              <span>❄️ Sub-Zero Icing</span>
+              <span>❄️ Airframe Icing</span>
             </div>
-            <div class="text-[10px] text-sky-200 font-mono font-semibold">Cold Blue Glow (-45°C)</div>
+            <div class="text-[10px] text-sky-200 font-mono font-semibold">Sub-Zero (-45°C)</div>
+          </button>
+
+          <button onclick="applyPreset('PROPELLER_ICING')" class="p-2.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/80 border-2 border-cyan-400 text-left transition text-xs shadow-lg shadow-cyan-900/50">
+            <div class="font-bold text-cyan-300 flex items-center gap-1">
+              <span>❄️ Propeller Icing</span>
+            </div>
+            <div class="text-[10px] text-cyan-200 font-mono font-bold">Only Propeller Blue Glow & Pulse</div>
           </button>
         </div>
       </div>
@@ -629,6 +636,13 @@ GENERATOR_HTML_CONTENT = """<!DOCTYPE html>
           body: JSON.stringify({ scenario_id: 'HIGH_ALTITUDE_ICING', duration_s: 120 })
         });
         setAllValues({ rpm: 2850, map: 0.98, fuel_flow: 21.0, vibration: 4.2, oil_pressure: 2.2, oil_temperature: 58.0, battery_voltage: 23.5, cht: [135.0, 140.0, 138.0, 132.0], egt: [640, 650, 645, 638], altitude_m: 9500, airspeed_kmh: 185 });
+      } else if (preset === 'PROPELLER_ICING') {
+        fetch('/api/scenarios/start', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ scenario_id: 'PROPELLER_ICING', duration_s: 120 })
+        });
+        setAllValues({ rpm: 2650, map: 1.05, fuel_flow: 25.0, vibration: 5.8, oil_pressure: 3.8, oil_temperature: 72.0, battery_voltage: 23.4, cht: [158.0, 162.0, 160.0, 155.0], egt: [665, 672, 668, 660], altitude_m: 8800, airspeed_kmh: 165 });
       } else if (preset === 'FULL_AIRFRAME_ALERT') {
         fetch('/api/scenarios/start', {
           method: 'POST',
