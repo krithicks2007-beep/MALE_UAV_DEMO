@@ -104,8 +104,23 @@ function DroneMesh({
 
         const isProp = nameLower.includes('prop') || nameLower.includes('rotor') || nameLower.includes('blade') || nameLower.includes('spinner');
         const isMissile = nameLower.includes('missile') || nameLower.includes('pylon') || nameLower.includes('weapon') || nameLower.includes('rail') || nameLower.includes('bomb') || (posX > 1.8 && posX < 4.8 && posY < -0.1);
-        const isFrontHead = nameLower.includes('nose') || nameLower.includes('radome') || nameLower.includes('sensor') || nameLower.includes('camera') || nameLower.includes('gimbal') || nameLower.includes('head') || (posZ > 2.5);
-        const isMotor = nameLower.includes('engine') || nameLower.includes('motor') || nameLower.includes('exhaust') || nameLower.includes('nacelle') || (posX < 1.8 && posZ < 0.5 && posZ > -3.2);
+        
+        // Expanded head / radome / sensor detection radius
+        const isFrontHead =
+          nameLower.includes('nose') ||
+          nameLower.includes('radome') ||
+          nameLower.includes('sensor') ||
+          nameLower.includes('camera') ||
+          nameLower.includes('gimbal') ||
+          nameLower.includes('head') ||
+          nameLower.includes('front') ||
+          nameLower.includes('cockpit') ||
+          nameLower.includes('optics') ||
+          nameLower.includes('turret') ||
+          nameLower.includes('pitot') ||
+          (posZ > 1.2 && posX < 2.5);
+
+        const isMotor = nameLower.includes('engine') || nameLower.includes('motor') || nameLower.includes('exhaust') || nameLower.includes('nacelle') || (posX < 1.8 && posZ <= 1.2 && posZ > -3.2);
         const isWing = nameLower.includes('wing') || nameLower.includes('airfoil') || nameLower.includes('aileron') || (posX >= 4.0);
 
         if (isProp) {
@@ -138,19 +153,19 @@ function DroneMesh({
 
     // 2. Smooth pulsating emissive intensity (breathing oscillation at 4.5 Hz)
     const pulse = Math.sin(t * 4.5) * 0.45 + 0.55;
-    const glowIntensity = pulse * 3.5 + 1.2;
+    const glowIntensity = pulse * 3.8 + 1.5;
 
     const isCold = glowZones.isColdIcing;
     const isPropIce = glowZones.isPropIcing;
 
-    const applyGlowToMeshes = (meshes: THREE.Mesh[], shouldGlow: boolean, colorHex: number) => {
+    const applyGlowToMeshes = (meshes: THREE.Mesh[], shouldGlow: boolean, colorHex: number, intensityMultiplier = 1.0) => {
       meshes.forEach((mesh) => {
         if (mesh.material) {
           const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
           mats.forEach((mat: any) => {
             if (shouldGlow && mat.emissive) {
               mat.emissive.setHex(colorHex);
-              mat.emissiveIntensity = glowIntensity;
+              mat.emissiveIntensity = glowIntensity * intensityMultiplier;
             } else if (mat.emissive) {
               mat.emissive.setHex(0x000000);
               mat.emissiveIntensity = 0;
@@ -167,7 +182,9 @@ function DroneMesh({
     applyGlowToMeshes(categorizedMeshRefs.current.motor, glowZones.glowMotor, isCold ? 0x00b4d8 : 0xff2200);
     applyGlowToMeshes(categorizedMeshRefs.current.wings, glowZones.glowWings, isCold ? 0x00e5ff : 0xff0033);
     applyGlowToMeshes(categorizedMeshRefs.current.missiles, glowZones.glowMissiles, isCold ? 0x0284c7 : 0xff0044);
-    applyGlowToMeshes(categorizedMeshRefs.current.frontHead, glowZones.glowFrontHead, isCold ? 0x38bdf8 : 0xff0022);
+    
+    // Boosted front head emissive intensity (1.6x multiplier) for maximum prominence
+    applyGlowToMeshes(categorizedMeshRefs.current.frontHead, glowZones.glowFrontHead, isCold ? 0x38bdf8 : 0xff0011, 1.6);
   });
 
   return <primitive object={clonedScene} />;
@@ -185,6 +202,7 @@ export function UAVModel({ twinState }: UAVModelProps) {
   const leftMissileLightRef = useRef<THREE.PointLight>(null!);
   const rightMissileLightRef = useRef<THREE.PointLight>(null!);
   const frontHeadLightRef = useRef<THREE.PointLight>(null!);
+  const frontHeadSecondaryLightRef = useRef<THREE.PointLight>(null!);
 
   // Compute individual active fault glow zones based on real-time telemetry & active scenario
   const fault = (twinState?.active_fault || '').toUpperCase();
@@ -256,7 +274,10 @@ export function UAVModel({ twinState }: UAVModelProps) {
     if (rightWingLightRef.current) rightWingLightRef.current.intensity = 16 * lightPulse;
     if (leftMissileLightRef.current) leftMissileLightRef.current.intensity = 16 * lightPulse;
     if (rightMissileLightRef.current) rightMissileLightRef.current.intensity = 16 * lightPulse;
-    if (frontHeadLightRef.current) frontHeadLightRef.current.intensity = 18 * lightPulse;
+    
+    // Boosted pulsing light intensity for front head
+    if (frontHeadLightRef.current) frontHeadLightRef.current.intensity = 38 * lightPulse;
+    if (frontHeadSecondaryLightRef.current) frontHeadSecondaryLightRef.current.intensity = 25 * lightPulse;
   });
 
   // Choose light colors: Cold Cyan-Blue (#00d4ff) for propeller/cold icing, vivid Red for mechanical/thermal alerts
@@ -349,15 +370,26 @@ export function UAVModel({ twinState }: UAVModelProps) {
         </>
       )}
 
-      {/* 5. FRONT HEAD OF THE DRONE FAULT GLOW */}
+      {/* 5. FRONT HEAD OF THE DRONE FAULT GLOW (EXPANDED RADIUS & DUAL INTENSITY LIGHTS) */}
       {glowFrontHead && (
-        <pointLight
-          ref={frontHeadLightRef}
-          position={[0, 0.8, 4.2]}
-          color={frontHeadColor}
-          intensity={18}
-          distance={5.5}
-        />
+        <>
+          {/* Forward Nose Tip & Sensor Turret Point Light */}
+          <pointLight
+            ref={frontHeadLightRef}
+            position={[0, 0.9, 4.8]}
+            color={frontHeadColor}
+            intensity={38}
+            distance={14.0}
+          />
+          {/* Forward Radome & Avionics Bay Underside Fill Light */}
+          <pointLight
+            ref={frontHeadSecondaryLightRef}
+            position={[0, -0.4, 3.2]}
+            color={frontHeadColor}
+            intensity={25}
+            distance={10.0}
+          />
+        </>
       )}
     </group>
   );

@@ -1,8 +1,10 @@
+import { useRef } from 'react';
 import { useTwinStore } from '../../stores/twinStore';
-import { TwinCanvas } from './TwinCanvas';
+import { TwinCanvas, type TwinCanvasRef } from './TwinCanvas';
 
 export function TwinStagePanel() {
   const { twinState, modelMode, setModelMode, toggleModelMode } = useTwinStore();
+  const canvasRef = useRef<TwinCanvasRef>(null);
   const isLive = twinState?.twin_sync_status === 'SYNCED';
 
   return (
@@ -68,19 +70,60 @@ export function TwinStagePanel() {
           </div>
         </div>
 
-        {/* Right-side view controls */}
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-20">
+        {/* Right-side quick camera view controls */}
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 z-20 bg-white/90 backdrop-blur-md p-1.5 rounded-2xl border border-[#d3ded5] shadow-md">
+          <button
+            type="button"
+            title="Reset to 3D Orbit View"
+            onClick={() => canvasRef.current?.resetCamera()}
+            className="w-8 h-8 rounded-xl hover:bg-sage-100 text-charcoal flex items-center justify-center text-xs transition"
+          >
+            <span className="material-symbols-outlined text-[16px]">3d_rotation</span>
+          </button>
+          <button
+            type="button"
+            title="Top View (Dorsal)"
+            onClick={() => canvasRef.current?.setTopView()}
+            className="w-8 h-8 rounded-xl hover:bg-sage-100 text-charcoal flex items-center justify-center text-[10px] font-mono font-bold transition"
+          >
+            TOP
+          </button>
+          <button
+            type="button"
+            title="Bottom View (Ventral / Underside)"
+            onClick={() => canvasRef.current?.setBottomView()}
+            className="w-8 h-8 rounded-xl hover:bg-sage-100 text-charcoal flex items-center justify-center text-[10px] font-mono font-bold transition text-amber-700 bg-amber-50/60"
+          >
+            BTM
+          </button>
+          <button
+            type="button"
+            title="Front Nose View"
+            onClick={() => canvasRef.current?.setFrontView()}
+            className="w-8 h-8 rounded-xl hover:bg-sage-100 text-charcoal flex items-center justify-center text-[10px] font-mono font-bold transition"
+          >
+            FWD
+          </button>
+          <button
+            type="button"
+            title="Aft Pusher Propeller View"
+            onClick={() => canvasRef.current?.setRearView()}
+            className="w-8 h-8 rounded-xl hover:bg-sage-100 text-charcoal flex items-center justify-center text-[10px] font-mono font-bold transition"
+          >
+            AFT
+          </button>
+          <div className="h-[1px] bg-[#d3ded5] my-0.5" />
           <button
             type="button"
             title="Toggle Solid / Wireframe Model"
             onClick={toggleModelMode}
-            className={`w-10 h-10 rounded-2xl border shadow-sm flex items-center justify-center transition-all ${
+            className={`w-8 h-8 rounded-xl flex items-center justify-center transition ${
               modelMode === 'WIREFRAME'
-                ? 'bg-sage-700 text-white border-sage-800'
-                : 'bg-white/90 hover:bg-white text-sage-800 border-[#d3ded5]'
+                ? 'bg-sage-700 text-white shadow-xs'
+                : 'hover:bg-sage-100 text-sage-800'
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">
+            <span className="material-symbols-outlined text-[16px]">
               {modelMode === 'WIREFRAME' ? 'grid_3x3' : 'view_in_ar'}
             </span>
           </button>
@@ -88,15 +131,15 @@ export function TwinStagePanel() {
 
         {/* Three.js Canvas */}
         <div className="relative z-10 w-full h-[500px]">
-          <TwinCanvas twinState={twinState} />
+          <TwinCanvas ref={canvasRef} twinState={twinState} />
         </div>
       </div>
 
       {/* Bottom dock bar */}
       <div className="w-full flex items-center justify-between z-20 pt-2 border-t border-[#d8e2da]">
         <span className="flex items-center gap-1.5 text-xs font-mono text-sage-700">
-          <span className="material-symbols-outlined text-[14px]">3d_rotation</span>
-          Drag to orbit • Mode: <span className="font-semibold text-charcoal">{modelMode}</span>
+          <span className="material-symbols-outlined text-[14px]">open_in_full</span>
+          Drag freely in 360° across all axes (including bottom belly)
         </span>
         <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-white/80 border border-[#d2ded5] shadow-sm">
           <button
