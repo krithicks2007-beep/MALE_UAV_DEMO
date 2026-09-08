@@ -1,0 +1,203 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   DESIGN TOKENS — CSS CUSTOM PROPERTIES
+   ============================================================ */
+:root {
+  /* Canvas & Surfaces */
+  --color-canvas:          #ebeeed;
+  --color-surface:         #ffffff;
+  --color-surface-muted:   #f0f4f1;
+  --color-surface-frosted: rgba(211, 226, 214, 0.80);
+  --color-surface-card:    rgba(244, 247, 244, 0.90);
+
+  /* Sage Palette */
+  --sage-50:  #f4f7f4;
+  --sage-100: #e5ece6;
+  --sage-200: #d3dfd5;
+  --sage-300: #b5ccb9;
+  --sage-400: #8fae96;
+  --sage-500: #6e8c75;
+  --sage-600: #55705b;
+  --sage-700: #425647;
+  --sage-800: #314035;
+  --sage-900: #1f2b23;
+
+  /* Charcoal */
+  --charcoal:       #1f2421;
+  --charcoal-light: #2a302d;
+  --charcoal-hover: #141715;
+
+  /* Text */
+  --text-primary:   #1f2421;
+  --text-secondary: #6d7870;
+  --text-muted:     #9da99e;
+
+  /* Borders */
+  --border-subtle:  rgba(110, 136, 116, 0.18);
+  --border-card:    rgba(215, 225, 218, 0.70);
+
+  /* Status */
+  --status-ok:   #10b981;
+  --status-warn: #d97706;
+  --status-crit: #dc2626;
+  --status-info: #3b82f6;
+
+  /* Radius Scale */
+  --radius-sm:   0.5rem;
+  --radius-md:   1rem;
+  --radius-lg:   1.5rem;
+  --radius-xl:   1.75rem;
+  --radius-2xl:  2.25rem;
+  --radius-pill: 9999px;
+
+  /* Spacing Scale */
+  --space-2xs: 0.25rem;
+  --space-xs:  0.5rem;
+  --space-sm:  0.75rem;
+  --space-md:  1rem;
+  --space-lg:  1.5rem;
+  --space-xl:  2rem;
+  --space-2xl: 3rem;
+}
+
+/* ============================================================
+   BASE RESETS
+   ============================================================ */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--text-primary);
+  font-family: 'Manrope', sans-serif;
+  overscroll-behavior: none;
+  min-height: 100vh;
+}
+
+/* Hide scrollbars (aerospace HUD aesthetic) */
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+/* ============================================================
+   UTILITY CLASSES
+   ============================================================ */
+
+/* Frosted glass panel (right column) */
+.glass-sage {
+  background: rgba(211, 226, 214, 0.80);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.40);
+}
+
+/* Frosted white card */
+.glass-white {
+  background: rgba(255, 255, 255, 0.70);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(197, 216, 202, 0.60);
+}
+
+/* Radial pod gradient — center 3D stage */
+.radial-pod-gradient {
+  background: radial-gradient(circle at 45% 45%, #e1ebe3 0%, #ccdcd0 48%, #b5c7ba 100%);
+}
+
+/* Semi-arc gauge track */
+.arc-track {
+  stroke: var(--sage-200);
+  stroke-linecap: round;
+  fill: none;
+}
+.arc-fill {
+  stroke: var(--sage-600);
+  stroke-linecap: round;
+  fill: none;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Status dot pulse */
+.status-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Bounce anomaly flag */
+.anomaly-bounce {
+  animation: bounce 1s infinite;
+}
+
+/* Three.js canvas cursor */
+.twin-canvas {
+  cursor: grab;
+}
+.twin-canvas:active {
+  cursor: grabbing;
+}
+
+/* Metric display font — thin numerals */
+.display-num {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
+/* Mono label */
+.label-mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Section heading */
+.section-heading {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sage-700);
+}
+
+/* Progress bar fill */
+.progress-fill {
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Card hover lift */
+.card-hover {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card-hover:hover {
+  box-shadow: 0 8px 32px -8px rgba(66, 86, 71, 0.12);
+  transform: translateY(-1px);
+}
+
+/* Pill button */
+.pill-btn-dark {
+  background: var(--charcoal);
+  color: #f7f8f6;
+  border-radius: var(--radius-pill);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.pill-btn-dark:hover {
+  background: var(--charcoal-hover);
+  transform: scale(1.01);
+}
+
+/* Anomaly warning state text */
+.text-warn { color: var(--status-warn); }
+.text-crit { color: var(--status-crit); }
+.text-ok   { color: var(--status-ok); }
