@@ -11,6 +11,7 @@ import { useAlertStore } from '../stores/alertStore';
 import { useMissionStore } from '../stores/missionStore';
 import { useTwinStore } from '../stores/twinStore';
 import { useConnectionStore } from '../stores/connectionStore';
+import { useScenarioStore } from '../stores/scenarioStore';
 import { disconnect as disconnectMock } from './MockAdapter';
 import type { ScenarioId } from '../models/engine';
 import type { Alert } from '../models/alerts';
@@ -107,6 +108,13 @@ export function connectWebSocket(url?: string) {
               current_phase_label: frame.flight_context.mission_phase || currentMission.current_phase_label
             });
           }
+        }
+
+        // 7. Active Scenario Sync
+        if (frame.active_scenario && frame.active_scenario.id) {
+          useScenarioStore.setState({ activeScenario: frame.active_scenario.id });
+        } else if (frame.active_scenario === null) {
+          useScenarioStore.setState({ activeScenario: 'NORMAL' });
         }
       } catch (err) {
         console.error('[WebSocketAdapter] Parse error:', err);

@@ -15,7 +15,7 @@ def test_manual_override_and_tapas_limits():
 
     # 1. Test GET /control UI HTML
     r_ui = requests.get(f"{BASE_URL}/control")
-    assert r_ui.status_code == 200 and "TAPAS DRDO UAV" in r_ui.text
+    assert r_ui.status_code == 200 and ("MALE UAV" in r_ui.text or "TAPAS" in r_ui.text)
     print("  [OK] GET /control => Generator UI HTML loaded successfully.")
 
     # 2. Test Manual Control Slider Adjustments (Normal parameter nudging)

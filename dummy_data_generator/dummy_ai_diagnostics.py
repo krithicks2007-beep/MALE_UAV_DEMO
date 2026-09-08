@@ -36,6 +36,7 @@ class DummyAIDiagnosticEngine:
     ) -> Tuple[DummyAIDiagnostics, HealthState, TwinVisualizationState, List[MaintenanceAdvisory]]:
         timestamp_str = telemetry.timestamp
         sid = active_scenario.id if active_scenario else "NORMAL"
+        fault_intensity = max(0.2, fault_intensity) if (active_scenario and sid != "NORMAL") else fault_intensity
 
         # Baseline nominal health indices
         mech_health = 96.0
@@ -486,6 +487,9 @@ class DummyAIDiagnosticEngine:
         if telemetry.rpm > 5800.0:
             tapas_critical_violations.append(f"TAPAS DRDO LIMIT EXCEEDED: Engine Overspeed {telemetry.rpm:.0f} RPM > 5800 RPM redline")
             mech_health = min(mech_health, 30.0)
+            vibration_state = "HIGH"
+            if primary_fault == "NONE":
+                primary_fault = "PROPELLER_OVERSPEED"
         elif telemetry.rpm > 5500.0:
             tapas_warning_violations.append(f"TAPAS DRDO WARNING: Engine RPM {telemetry.rpm:.0f} RPM > 5500 RPM max continuous power")
             mech_health = min(mech_health, 70.0)
@@ -506,7 +510,18 @@ class DummyAIDiagnosticEngine:
         if tapas_critical_violations:
             severity = "CRITICAL"
             if primary_fault == "NONE":
-                primary_fault = "TAPAS_DRDO_CRITICAL_EXCURSION"
+                if active_scenario and sid != "NORMAL":
+                    primary_fault = active_scenario.id
+                elif max_cht > 200.0 or max_egt > 750.0:
+                    primary_fault = "ENGINE_OVERHEATING"
+                elif telemetry.vibration > 5.0:
+                    primary_fault = "ABNORMAL_VIBRATION"
+                elif telemetry.oil_pressure < 3.2 or telemetry.oil_temperature > 115.0:
+                    primary_fault = "LUBRICATION_ISSUE"
+                elif telemetry.rpm > 5500.0:
+                    primary_fault = "PROPELLER_OVERSPEED"
+                else:
+                    primary_fault = "TAPAS_DRDO_CRITICAL_EXCURSION"
             fault_confidence = max(fault_confidence, 99.0)
             degradation_status = "SEVERE"
             failure_risk_pct = max(failure_risk_pct, 88.0)
@@ -525,7 +540,18 @@ class DummyAIDiagnosticEngine:
         elif tapas_warning_violations and severity in ("NOMINAL", "INFO"):
             severity = "WARNING"
             if primary_fault == "NONE":
-                primary_fault = "TAPAS_DRDO_WARNING"
+                if active_scenario and sid != "NORMAL":
+                    primary_fault = active_scenario.id
+                elif max_cht > 200.0 or max_egt > 750.0:
+                    primary_fault = "ENGINE_OVERHEATING"
+                elif telemetry.vibration > 5.0:
+                    primary_fault = "ABNORMAL_VIBRATION"
+                elif telemetry.oil_pressure < 3.2 or telemetry.oil_temperature > 115.0:
+                    primary_fault = "LUBRICATION_ISSUE"
+                elif telemetry.rpm > 5500.0:
+                    primary_fault = "PROPELLER_OVERSPEED"
+                else:
+                    primary_fault = "TAPAS_DRDO_WARNING"
             fault_confidence = max(fault_confidence, 85.0)
             degradation_status = "SLIGHT" if degradation_status == "NOMINAL" else degradation_status
             failure_risk_pct = max(failure_risk_pct, 45.0)

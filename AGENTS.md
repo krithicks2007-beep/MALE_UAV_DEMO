@@ -125,7 +125,7 @@ export interface EngineConfiguration {
   engine_id: string;          // e.g. "AERO-PISTON-MALE-01"
   cylinder_count: number;     // Dynamic count (default: 4)
   telemetry_schema_version: string; // e.g. "1.0.0"
-  unit_system: 'METRIC' | 'IMPERIAL';
+  unit_system: 'SI';
 }
 ```
 

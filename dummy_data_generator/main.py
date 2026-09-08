@@ -201,8 +201,13 @@ def get_scenarios():
 
 
 @app.post("/api/scenarios/start")
-def start_scenario(req: ScenarioStartRequest):
+async def start_scenario(req: ScenarioStartRequest):
     scenario = generator.start_scenario(req.scenario_id, req.duration_s)
+    try:
+        frame = generator.generate_frame(dt=0.01)
+        await manager.broadcast_json(frame.model_dump())
+    except Exception as e:
+        logger.error(f"Error broadcasting on scenario start: {e}")
     return {
         "status": "STARTED",
         "scenario": scenario
@@ -210,8 +215,13 @@ def start_scenario(req: ScenarioStartRequest):
 
 
 @app.post("/api/scenarios/stop")
-def stop_scenario():
+async def stop_scenario():
     event = generator.stop_scenario()
+    try:
+        frame = generator.generate_frame(dt=0.01)
+        await manager.broadcast_json(frame.model_dump())
+    except Exception as e:
+        logger.error(f"Error broadcasting on scenario stop: {e}")
     return {
         "status": "STOPPED",
         "event": event
@@ -219,12 +229,17 @@ def stop_scenario():
 
 
 @app.post("/api/simulation/state")
-def set_simulation_state(req: StateChangeRequest):
+async def set_simulation_state(req: StateChangeRequest):
     state_upper = req.state.upper()
     valid_states = ["IDLE", "TAKEOFF", "CLIMB", "CRUISE", "DESCENT", "LANDING"]
     if state_upper not in valid_states:
         raise HTTPException(status_code=400, detail=f"Invalid state. Must be one of: {valid_states}")
     generator.set_operating_state(state_upper)
+    try:
+        frame = generator.generate_frame(dt=0.01)
+        await manager.broadcast_json(frame.model_dump())
+    except Exception as e:
+        logger.error(f"Error broadcasting on simulation state: {e}")
     return {
         "status": "UPDATED",
         "operating_state": state_upper
@@ -262,8 +277,13 @@ def get_manual_control_state():
 
 
 @app.post("/api/manual-control")
-def set_manual_control_state(req: ManualControlRequest):
+async def set_manual_control_state(req: ManualControlRequest):
     generator.physics.set_manual_override(req.manual_override, req.values)
+    try:
+        frame = generator.generate_frame(dt=0.01)
+        await manager.broadcast_json(frame.model_dump())
+    except Exception as e:
+        logger.error(f"Error broadcasting on manual control: {e}")
     return {
         "status": "UPDATED",
         "manual_override": generator.physics.manual_override,
@@ -272,8 +292,13 @@ def set_manual_control_state(req: ManualControlRequest):
 
 
 @app.post("/api/manual-control/param")
-def update_manual_param(req: ManualParamRequest):
+async def update_manual_param(req: ManualParamRequest):
     generator.physics.update_manual_value(req.key, req.value)
+    try:
+        frame = generator.generate_frame(dt=0.01)
+        await manager.broadcast_json(frame.model_dump())
+    except Exception as e:
+        logger.error(f"Error broadcasting on param update: {e}")
     return {
         "status": "UPDATED",
         "key": req.key,

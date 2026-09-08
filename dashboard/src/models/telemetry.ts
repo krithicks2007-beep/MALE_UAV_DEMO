@@ -25,7 +25,7 @@ export interface EngineConfiguration {
   engine_model: string;               // e.g. "TAPAS Pusher Piston"
   cylinder_count: number;             // Default: 4
   telemetry_schema_version: string;   // e.g. "1.0.0"
-  unit_system: 'METRIC' | 'IMPERIAL';
+  unit_system: 'SI' | 'METRIC';
 }
 
 /** Context telemetry (optional, may be null if unavailable) */

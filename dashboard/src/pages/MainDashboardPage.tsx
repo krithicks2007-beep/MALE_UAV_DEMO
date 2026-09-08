@@ -8,6 +8,7 @@ import { SagePanel, SagePanelHeader } from '../components/common/SagePanel';
 import { ActualVsPredictedChart } from '../components/twin-analysis/ActualVsPredictedChart';
 import { AIInsightCard } from '../components/diagnostics/AIInsightCard';
 import { RULCard } from '../components/diagnostics/RULCard';
+import { MissionFeasibilityCard } from '../components/diagnostics/MissionFeasibilityCard';
 import { DegradationTrendChart } from '../components/trends/DegradationTrendChart';
 import { MissionTimeline } from '../components/mission/MissionTimeline';
 
@@ -51,6 +52,9 @@ export function MainDashboardPage() {
           valueClass="text-sage-800"
         />
       </section>
+
+      {/* ── Predictive AI Mission Completion & Safe Return Predictor ──── */}
+      <MissionFeasibilityCard />
 
       {/* ── Row 2: Main 3-Panel Bento ────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">

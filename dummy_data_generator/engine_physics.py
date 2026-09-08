@@ -55,8 +55,8 @@ class EnginePhysicsSimulation:
         # Flight context
         self.altitude_m: float = cfg.altitude_m
         self.airspeed_kmh: float = cfg.airspeed_kmh
-        self.ambient_temp_c: float = 38.0
-        self.ambient_pressure_hpa: float = 1013.25 * math.exp(-self.altitude_m / 8400.0)
+        # Calculate initial atmospheric physics based on altitude
+        self.calculate_atmospheric_physics(self.altitude_m)
         self.fuel_quantity_pct: float = 72.0
 
         # Manual override mode for Data Generator UI
@@ -92,6 +92,28 @@ class EnginePhysicsSimulation:
             "injection_timing": 0.0,
         }
 
+    def calculate_atmospheric_physics(self, altitude_m: float) -> Tuple[float, float, float]:
+        """
+        Calculates ISA (International Standard Atmosphere) parameters from altitude:
+        - Ambient Temperature (°C) with standard environmental lapse rate (-6.5°C / 1000m)
+        - Ambient Barometric Pressure (hPa)
+        - Air Density (kg/m³)
+        """
+        # Base sea-level tropical ambient temp: 32°C (TAPAS baseline ground temp)
+        # Lapse rate: 0.0065 °C/m up to 11,000m tropopause
+        h = max(0.0, min(12000.0, altitude_m))
+        t_amb = max(-56.5, 32.0 - 0.0065 * h)
+        # Barometric formula: P = P0 * (1 - 2.25577e-5 * h)^5.25588
+        p_ratio = max(0.1, 1.0 - 2.25577e-5 * h)
+        p_amb = 1013.25 * (p_ratio ** 5.25588)
+        # Air density rho = P / (R * T_kelvin)
+        t_kelvin = t_amb + 273.15
+        rho = (p_amb * 100.0) / (287.05 * t_kelvin)
+
+        self.ambient_temp_c = round(t_amb, 1)
+        self.ambient_pressure_hpa = round(p_amb, 1)
+        return self.ambient_temp_c, self.ambient_pressure_hpa, rho
+
     def set_operating_state(self, state_name: str):
         if state_name in self.config.operating_states:
             self.target_state_name = state_name
@@ -107,11 +129,27 @@ class EnginePhysicsSimulation:
         self.manual_override = enabled
         if values:
             self.manual_state.update(values)
+            if "altitude_m" in values:
+                self.calculate_atmospheric_physics(float(values["altitude_m"]))
 
     def update_manual_value(self, key: str, value: Any):
         """Update a specific parameter in manual override mode."""
         self.manual_state[key] = value
         self.manual_override = True
+        if key == "altitude_m":
+            alt = float(value)
+            self.calculate_atmospheric_physics(alt)
+            # Automatic atmospheric cooling coupling if not explicitly overridden
+            t_amb, _, _ = self.calculate_atmospheric_physics(alt)
+            cooling_delta_cht = (t_amb - 25.0) * 0.35
+            cooling_delta_oil = (t_amb - 25.0) * 0.20
+            # Adjust default CHTs & Oil temp relative to ambient
+            base_cht = 178.0 + cooling_delta_cht
+            base_oil = 92.0 + cooling_delta_oil
+            if "cht" not in self.manual_state or not isinstance(self.manual_state["cht"], list):
+                self.manual_state["cht"] = [base_cht - 1.5, base_cht + 2.2, base_cht + 1.8, base_cht - 2.5]
+            if "oil_temperature" not in self.manual_state:
+                self.manual_state["oil_temperature"] = base_oil
 
     def step(self, dt: float = 1.0) -> Tuple[CanonicalTelemetry, FlightContext]:
         """Advance physics simulation by dt seconds."""
@@ -134,6 +172,9 @@ class EnginePhysicsSimulation:
             target_volt = float(m.get("battery_voltage", self.battery_voltage))
             target_inj = float(m.get("injection_timing", self.injection_timing))
 
+            self.altitude_m = target_alt
+            self.calculate_atmospheric_physics(self.altitude_m)
+
             # Instant response for manual slider control
             self.rpm = target_rpm
             self.map = target_map
@@ -150,14 +191,14 @@ class EnginePhysicsSimulation:
             for i in range(4):
                 tgt_c = float(m_cht[i]) if isinstance(m_cht, list) and len(m_cht) > i else float(m_cht)
                 self.cht[i] = tgt_c
-                cht_noisy = round(self.cht[i] + self.rng.gauss(0.0, 0.4), 1)
+                cht_noisy = 0.0 if tgt_c == 0.0 else round(self.cht[i] + self.rng.gauss(0.0, 0.4), 1)
                 cht_values.append(cht_noisy)
 
             egt_values = []
             for i in range(4):
                 tgt_e = float(m_egt[i]) if isinstance(m_egt, list) and len(m_egt) > i else float(m_egt)
                 self.egt[i] = tgt_e
-                egt_noisy = round(self.egt[i] + self.rng.gauss(0.0, 1.2), 1)
+                egt_noisy = 0.0 if tgt_e == 0.0 else round(self.egt[i] + self.rng.gauss(0.0, 1.2), 1)
                 egt_values.append(egt_noisy)
 
             rpm_noisy = round(self.rpm + self.rng.gauss(0.0, 3.0), 1)
@@ -301,6 +342,7 @@ class EnginePhysicsSimulation:
         # 11. Flight context updates
         self.altitude_m += (target_alt - self.altitude_m) * (inertia * 0.5)
         self.airspeed_kmh += (target_speed - self.airspeed_kmh) * (inertia * 0.5)
+        self.calculate_atmospheric_physics(self.altitude_m)
         # Fuel consumption
         self.fuel_quantity_pct = max(0.0, self.fuel_quantity_pct - (fuel_flow_noisy * (dt / 3600.0) * 0.1))
 

@@ -4,6 +4,9 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { TwinVisualizationState } from '../../models/engine';
 import { useTwinStore } from '../../stores/twinStore';
+import { useTelemetryStore } from '../../stores/telemetryStore';
+import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
+import { useScenarioStore } from '../../stores/scenarioStore';
 
 interface UAVModelProps {
   twinState: TwinVisualizationState | null;
@@ -23,7 +26,7 @@ interface ActiveGlowZones {
 function DroneMesh({
   url,
   isWireframe,
-  twinState,
+  twinState: _twinState,
   glowZones,
 }: {
   url: string;
@@ -31,7 +34,6 @@ function DroneMesh({
   twinState: TwinVisualizationState | null;
   glowZones: ActiveGlowZones;
 }) {
-  const propRefs = useRef<THREE.Object3D[]>([]);
   const categorizedMeshRefs = useRef<{
     prop: THREE.Mesh[];
     motor: THREE.Mesh[];
@@ -50,7 +52,6 @@ function DroneMesh({
 
   const clonedScene = useMemo(() => {
     const c = scene.clone(true);
-    propRefs.current = [];
     categorizedMeshRefs.current = {
       prop: [],
       motor: [],
@@ -77,36 +78,113 @@ function DroneMesh({
       c.scale.set(targetScale, targetScale, targetScale);
     }
 
-    // Traverse and categorize meshes into 5 specific fault zones
+    // Force update matrix so bounding boxes can be evaluated accurately
+    c.updateMatrixWorld(true);
+
+    // Traverse and categorize meshes into 5 specific fault zones using exact 3D bounding coordinates
     c.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.castShadow = !isWireframe;
         child.receiveShadow = !isWireframe;
 
         if (child.material) {
+          const cloneAndInit = (m: THREE.Material) => {
+            const cloneMat = m.clone();
+            if (isWireframe) (cloneMat as any).wireframe = true;
+            // Strict nominal state initialization: zero emissive glow, original authentic texture & color
+            if ((cloneMat as any).emissive) {
+              (cloneMat as any).emissive.setHex(0x000000);
+              (cloneMat as any).emissiveIntensity = 0;
+            }
+            return cloneMat;
+          };
+
           if (Array.isArray(child.material)) {
-            child.material = child.material.map((m) => {
-              const cloneMat = m.clone();
-              if (isWireframe) cloneMat.wireframe = true;
-              return cloneMat;
-            });
+            child.material = child.material.map(cloneAndInit);
           } else {
-            const cloneMat = child.material.clone();
-            if (isWireframe) cloneMat.wireframe = true;
-            child.material = cloneMat;
+            child.material = cloneAndInit(child.material);
           }
         }
 
-        const nameLower = (child.name || '').toLowerCase();
-        const posX = Math.abs(child.position.x);
-        const posY = child.position.y;
-        const posZ = child.position.z;
+        // Calculate exact mesh center and bounds in 3D scene space
+        const childBox = new THREE.Box3().setFromObject(child);
+        const childCenter = new THREE.Vector3();
+        childBox.getCenter(childCenter);
 
-        const isProp = nameLower.includes('prop') || nameLower.includes('rotor') || nameLower.includes('blade') || nameLower.includes('spinner');
-        const isMissile = nameLower.includes('missile') || nameLower.includes('pylon') || nameLower.includes('weapon') || nameLower.includes('rail') || nameLower.includes('bomb') || (posX > 1.8 && posX < 4.8 && posY < -0.1);
-        
-        // Expanded head / radome / sensor detection radius
+        const nameLower = (child.name || '').toLowerCase();
+        const dimX = childBox.max.x - childBox.min.x;
+        const minX = childBox.min.x;
+        const maxX = childBox.max.x;
+        const posX = Math.abs(childCenter.x);
+        const posY = childCenter.y;
+        const posZ = childCenter.z;
+
+        // 1. Propeller (Object_19 pusher spinner & blades at aft)
+        const isProp =
+          child.name === 'Object_19' ||
+          nameLower === 'object_19' ||
+          (nameLower.includes('prop') && !nameLower.includes('boom')) ||
+          nameLower.includes('rotor') ||
+          nameLower.includes('spinner') ||
+          nameLower.includes('pusher_blade') ||
+          (posZ < -3.2 && posX < 0.5 && posY > -0.7 && posY < 0.1);
+
+        // 2. Missiles & Underwing Pylons (Object_15, Object_18)
+        const isMissile =
+          !isProp &&
+          (child.name === 'Object_15' ||
+          child.name === 'Object_18' ||
+          nameLower === 'object_15' ||
+          nameLower === 'object_18' ||
+          nameLower.includes('missile') ||
+          nameLower.includes('pylon') ||
+          nameLower.includes('weapon') ||
+          nameLower.includes('rail') ||
+          nameLower.includes('bomb') ||
+          nameLower.includes('agm') ||
+          nameLower.includes('hellfire') ||
+          nameLower.includes('payload') ||
+          (dimX > 2.0 && dimX < 7.0 && posY < 0.0 && posZ >= -1.0 && posZ <= 1.2));
+
+        // 3. Wings (Outer & Main Wings, Wingtips, Ailerons, Flaps, Span)
+        const isWing =
+          !isProp &&
+          !isMissile &&
+          (child.name === 'Object_3' ||
+          child.name === 'Object_4' ||
+          child.name === 'Object_5' ||
+          child.name === 'Object_10' ||
+          child.name === 'Object_13' ||
+          child.name === 'Object_14' ||
+          child.name === 'Object_16' ||
+          child.name === 'Object_17' ||
+          nameLower === 'object_3' ||
+          nameLower === 'object_4' ||
+          nameLower === 'object_5' ||
+          nameLower === 'object_10' ||
+          nameLower === 'object_13' ||
+          nameLower === 'object_14' ||
+          nameLower === 'object_16' ||
+          nameLower === 'object_17' ||
+          nameLower.includes('wing') ||
+          nameLower.includes('airfoil') ||
+          nameLower.includes('aileron') ||
+          nameLower.includes('flap') ||
+          nameLower.includes('spar') ||
+          nameLower.includes('tip') ||
+          dimX > 4.5 ||
+          minX < -2.5 ||
+          maxX > 2.5 ||
+          posX > 2.0);
+
+        // 4. Front Head (Radome, Nose, Pitot Probe, Camera/Gimbal Turret at Z > 1.2)
         const isFrontHead =
+          !isProp &&
+          !isMissile &&
+          !isWing &&
+          (child.name === 'Object_2' ||
+          child.name === 'Object_6' ||
+          child.name === 'Object_7' ||
           nameLower.includes('nose') ||
           nameLower.includes('radome') ||
           nameLower.includes('sensor') ||
@@ -118,22 +196,25 @@ function DroneMesh({
           nameLower.includes('optics') ||
           nameLower.includes('turret') ||
           nameLower.includes('pitot') ||
-          (posZ > 1.2 && posX < 2.5);
+          (posZ > 1.4 && posX < 1.5));
 
-        const isMotor = nameLower.includes('engine') || nameLower.includes('motor') || nameLower.includes('exhaust') || nameLower.includes('nacelle') || (posX < 1.8 && posZ <= 1.2 && posZ > -3.2);
-        const isWing = nameLower.includes('wing') || nameLower.includes('airfoil') || nameLower.includes('aileron') || (posX >= 4.0);
+        // 5. Motor (Central Engine Bay, Cowling, Nacelle, Exhaust, Fuselage Body)
+        const isMotor =
+          !isProp &&
+          !isMissile &&
+          !isWing &&
+          !isFrontHead;
 
         if (isProp) {
-          propRefs.current.push(child);
           categorizedMeshRefs.current.prop.push(child);
-        } else if (isMissile) {
-          categorizedMeshRefs.current.missiles.push(child);
         } else if (isFrontHead) {
           categorizedMeshRefs.current.frontHead.push(child);
-        } else if (isMotor) {
-          categorizedMeshRefs.current.motor.push(child);
+        } else if (isMissile) {
+          categorizedMeshRefs.current.missiles.push(child);
         } else if (isWing) {
           categorizedMeshRefs.current.wings.push(child);
+        } else if (isMotor) {
+          categorizedMeshRefs.current.motor.push(child);
         }
       }
     });
@@ -144,28 +225,52 @@ function DroneMesh({
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
-    // 1. Spin propeller meshes matching real-time RPM
-    const rpm = twinState ? twinState.rpm : 2850;
-    const spinDelta = (rpm / 60) * 0.04;
-    propRefs.current.forEach((prop) => {
-      prop.rotation.z += spinDelta;
-    });
+    // In normal state where no part should glow, guarantee 100% original appearance with zero emissive
+    if (!glowZones.hasAnyGlow) {
+      const resetMeshes = (meshes: THREE.Mesh[]) => {
+        meshes.forEach((mesh) => {
+          if (mesh.material) {
+            const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+            mats.forEach((mat: any) => {
+              if (mat.emissive && (mat.emissive.getHex() !== 0x000000 || mat.emissiveIntensity !== 0)) {
+                mat.emissive.setHex(0x000000);
+                mat.emissiveIntensity = 0;
+              }
+            });
+          }
+        });
+      };
+      resetMeshes(categorizedMeshRefs.current.prop);
+      resetMeshes(categorizedMeshRefs.current.motor);
+      resetMeshes(categorizedMeshRefs.current.wings);
+      resetMeshes(categorizedMeshRefs.current.missiles);
+      resetMeshes(categorizedMeshRefs.current.frontHead);
+      return;
+    }
 
-    // 2. Smooth pulsating emissive intensity (breathing oscillation at 4.5 Hz)
+    // Smooth pulsating emissive intensity (breathing oscillation at 4.5 Hz) strictly when a fault is active
     const pulse = Math.sin(t * 4.5) * 0.45 + 0.55;
-    const glowIntensity = pulse * 3.8 + 1.5;
+    const glowIntensity = pulse * 3.8 + 1.8;
 
     const isCold = glowZones.isColdIcing;
     const isPropIce = glowZones.isPropIcing;
 
-    const applyGlowToMeshes = (meshes: THREE.Mesh[], shouldGlow: boolean, colorHex: number, intensityMultiplier = 1.0) => {
+    // UNIFORM GLOWING COLOR:
+    // Warning Alarm Red = 0xff173d (Identical across Prop, Motor, Wings, Missiles, Front Head)
+    // Cold Icing Blue = 0x00d4ff (When icing is selected)
+    const UNIFORM_RED_GLOW = 0xff173d;
+    const UNIFORM_ICE_GLOW = 0x00d4ff;
+
+    const applyGlowToMeshes = (meshes: THREE.Mesh[], shouldGlow: boolean, colorHex: number) => {
       meshes.forEach((mesh) => {
         if (mesh.material) {
           const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
           mats.forEach((mat: any) => {
-            if (shouldGlow && mat.emissive) {
-              mat.emissive.setHex(colorHex);
-              mat.emissiveIntensity = glowIntensity * intensityMultiplier;
+            if (shouldGlow) {
+              if (mat.emissive) {
+                mat.emissive.setHex(colorHex);
+                mat.emissiveIntensity = glowIntensity;
+              }
             } else if (mat.emissive) {
               mat.emissive.setHex(0x000000);
               mat.emissiveIntensity = 0;
@@ -175,16 +280,14 @@ function DroneMesh({
       });
     };
 
-    // Propeller turns cold ice-blue (0x00d4ff) during propeller icing or general icing, otherwise red/amber on mechanical faults
-    const propColorHex = (isPropIce || isCold) ? 0x00d4ff : 0xff0022;
+    const propColorHex = (isPropIce || isCold) ? UNIFORM_ICE_GLOW : UNIFORM_RED_GLOW;
+    const generalColorHex = isCold ? UNIFORM_ICE_GLOW : UNIFORM_RED_GLOW;
 
     applyGlowToMeshes(categorizedMeshRefs.current.prop, glowZones.glowProp, propColorHex);
-    applyGlowToMeshes(categorizedMeshRefs.current.motor, glowZones.glowMotor, isCold ? 0x00b4d8 : 0xff2200);
-    applyGlowToMeshes(categorizedMeshRefs.current.wings, glowZones.glowWings, isCold ? 0x00e5ff : 0xff0033);
-    applyGlowToMeshes(categorizedMeshRefs.current.missiles, glowZones.glowMissiles, isCold ? 0x0284c7 : 0xff0044);
-    
-    // Boosted front head emissive intensity (1.6x multiplier) for maximum prominence
-    applyGlowToMeshes(categorizedMeshRefs.current.frontHead, glowZones.glowFrontHead, isCold ? 0x38bdf8 : 0xff0011, 1.6);
+    applyGlowToMeshes(categorizedMeshRefs.current.motor, glowZones.glowMotor, generalColorHex);
+    applyGlowToMeshes(categorizedMeshRefs.current.wings, glowZones.glowWings, generalColorHex);
+    applyGlowToMeshes(categorizedMeshRefs.current.missiles, glowZones.glowMissiles, generalColorHex);
+    applyGlowToMeshes(categorizedMeshRefs.current.frontHead, glowZones.glowFrontHead, generalColorHex);
   });
 
   return <primitive object={clonedScene} />;
@@ -194,9 +297,15 @@ export function UAVModel({ twinState }: UAVModelProps) {
   const groupRef = useRef<THREE.Group>(null!);
   const modelMode = useTwinStore((s) => s.modelMode);
 
-  // Light pulse reference for smooth point light breathing
+  // Live Zustand stores for real-time instant reaction across CHT, EGT, presets and faults
+  const telemetry = useTelemetryStore((s) => s.telemetry);
+  const diagnostics = useDiagnosticsStore((s) => s.diagnostics);
+  const activeScenario = useScenarioStore((s) => s.activeScenario);
+
+  // Spatial Point Light references for component illumination
   const propLightRef = useRef<THREE.PointLight>(null!);
   const motorLightRef = useRef<THREE.PointLight>(null!);
+  const motorBellyLightRef = useRef<THREE.PointLight>(null!);
   const leftWingLightRef = useRef<THREE.PointLight>(null!);
   const rightWingLightRef = useRef<THREE.PointLight>(null!);
   const leftMissileLightRef = useRef<THREE.PointLight>(null!);
@@ -204,35 +313,124 @@ export function UAVModel({ twinState }: UAVModelProps) {
   const frontHeadLightRef = useRef<THREE.PointLight>(null!);
   const frontHeadSecondaryLightRef = useRef<THREE.PointLight>(null!);
 
-  // Compute individual active fault glow zones based on real-time telemetry & active scenario
-  const fault = (twinState?.active_fault || '').toUpperCase();
-  const rpm = twinState?.rpm || 2850;
-  const isLubricationFault = twinState?.lubrication_state === 'CRITICAL' || twinState?.lubrication_state === 'DEGRADED';
-  const isHighVibration = twinState?.vibration_state === 'HIGH';
-  const isHighThermal = twinState?.thermal_state === 'CRITICAL' || twinState?.thermal_state === 'HIGH';
+  // 1. Live Telemetry Extraction
+  const currentRpm = telemetry?.rpm ?? twinState?.rpm ?? 2850;
+  const chtList = telemetry?.cht ?? [];
+  const maxCht = chtList.length > 0 ? Math.max(...chtList) : 0;
+  const egtList = telemetry?.egt ?? [];
+  const maxEgt = egtList.length > 0 ? Math.max(...egtList) : 0;
+  const currentVib = telemetry?.vibration ?? 2.0;
+  const oilPressure = telemetry?.oil_pressure ?? 4.5;
 
-  // Propeller-only Icing: turns ONLY the propeller cold blue and pulses
-  const isPropIcing = fault.includes('PROPELLER_ICING') || fault.includes('PROP_ICING') || (fault.includes('PROP') && fault.includes('ICE'));
-  
-  // General High-Altitude Icing across other components
-  const isColdIcing = !isPropIcing && (fault.includes('ICING') || fault.includes('COLD') || fault.includes('FREEZE'));
+  // 2. Active Fault / Preset / Scenario String Resolution
+  const twinFault = (twinState?.active_fault || '').toUpperCase().trim();
+  const diagFault = (diagnostics?.primary_fault || '').toUpperCase().trim();
+  const scenFault = (activeScenario || '').toUpperCase().trim();
+  const fault = `${twinFault} ${diagFault} ${scenFault}`.toUpperCase();
 
-  const isFullAirframe = fault.includes('FULL_AIRFRAME') || (twinState?.health_index !== undefined && twinState.health_index < 45);
+  // 3. Strict Single-Component Presets Detections
+  const isWingPreset =
+    fault.includes('WING_STRUCTURAL') ||
+    fault.includes('WING_STRESS') ||
+    fault.includes('WING') ||
+    fault.includes('AIRFOIL');
 
-  // 1. Propeller end of the drone (Glows blue when Propeller Icing is active)
-  const glowProp = isFullAirframe || isPropIcing || isColdIcing || fault.includes('PROP') || fault.includes('OVERSPEED') || rpm > 5600;
+  const isPropPreset =
+    fault.includes('PROPELLER_OVERSPEED') ||
+    fault.includes('PROP_OVERSPEED') ||
+    fault.includes('OVERSPEED_REDLINE') ||
+    currentRpm > 5600;
 
-  // 2. Middle of the drone, motor / engine core (Does NOT glow during propeller-only icing)
-  const glowMotor = isFullAirframe || isColdIcing || fault.includes('MOTOR') || fault.includes('OVERHEAT') || fault.includes('LUBRICATION') || fault.includes('INJECTOR') || fault.includes('MISFIRE') || isHighThermal || isLubricationFault;
+  const isPropIcing =
+    fault.includes('PROPELLER_ICING') ||
+    fault.includes('PROP_ICING');
 
-  // 3. Wings (left & right) (Does NOT glow during propeller-only icing)
-  const glowWings = isFullAirframe || isColdIcing || fault.includes('WING') || (isHighVibration && !fault.includes('PROP') && !isPropIcing);
+  const isMissilePreset =
+    fault.includes('MISSILE_HARDPOINT') ||
+    fault.includes('PYLON') ||
+    fault.includes('HARDPOINT') ||
+    fault.includes('MISSILE');
 
-  // 4. Missiles in the bottom of the wings (underwing pylons)
-  const glowMissiles = isFullAirframe || fault.includes('MISSILE') || fault.includes('HARDPOINT') || fault.includes('PYLON') || fault.includes('WEAPON');
+  const isAvionicsPreset =
+    fault.includes('AVIONICS_RADAR') ||
+    fault.includes('FRONT_NOSE') ||
+    fault.includes('RADAR_FAILURE') ||
+    fault.includes('RADOME') ||
+    fault.includes('SENSOR_DRIFT') ||
+    fault.includes('SENSOR_FAIL') ||
+    fault.includes('SENSOR_FAILURE');
 
-  // 5. Front head of the drone (nose radome & pitot sensor pod) (Does NOT glow during propeller-only icing)
-  const glowFrontHead = isFullAirframe || isColdIcing || fault.includes('AVIONICS') || fault.includes('RADAR') || fault.includes('SENSOR') || fault.includes('NOSE') || fault.includes('PITOT');
+  const isMotorPreset =
+    fault.includes('MOTOR_STRESS') ||
+    fault.includes('MOTOR_FRICTION') ||
+    fault.includes('LUBRICATION') ||
+    fault.includes('LOW_OIL') ||
+    fault.includes('INJECTOR') ||
+    fault.includes('MISFIRE') ||
+    fault.includes('SEVERE_VIBRATION') ||
+    fault.includes('ABNORMAL_VIBRATION');
+
+  const isHighAltitudeIcing = fault.includes('HIGH_ALTITUDE_ICING');
+  const isFullAirframeAlert = fault.includes('FULL_AIRFRAME');
+  const isColdIcing = isHighAltitudeIcing || isPropIcing;
+
+  // 4. CHT and EGT Explicit Excursion Triggers:
+  // "for cht the fornt portion and egt the egine portion"
+  // Normal cruise CHT is ~175-185°C and EGT is ~680-700°C, so under normal conditions these are strictly FALSE
+  const isChtExcursion = maxCht > 200.0 || fault.includes('OVERHEAT') || fault.includes('CRITICAL_OVERHEAT');
+  const isEgtExcursion = maxEgt > 750.0;
+
+  let glowProp = false;
+  let glowMotor = false;
+  let glowWings = false;
+  let glowMissiles = false;
+  let glowFrontHead = false;
+
+  if (isFullAirframeAlert) {
+    // All parts glow synchronously on full airframe emergency
+    glowProp = true;
+    glowMotor = true;
+    glowWings = true;
+    glowMissiles = true;
+    glowFrontHead = true;
+  } else if (isHighAltitudeIcing) {
+    // Airframe icing: Propeller, Wings, and Nose Pitot glow cold blue
+    glowProp = true;
+    glowWings = true;
+    glowFrontHead = true;
+  } else if (isPropIcing) {
+    // Only propeller end glows blue
+    glowProp = true;
+  } else if (isWingPreset) {
+    // ONLY WINGS OUTER GLOW when wings preset is clicked or wing stress occurs
+    glowWings = true;
+  } else if (isPropPreset) {
+    // ONLY PROPELLER END GLOWS when propeller preset is clicked
+    glowProp = true;
+  } else if (isMissilePreset) {
+    // ONLY MISSILES BOTTOM GLOW when missiles preset is clicked
+    glowMissiles = true;
+  } else if (isAvionicsPreset) {
+    // ONLY FRONT END GLOWS when front head preset is clicked
+    glowFrontHead = true;
+  } else if (isMotorPreset) {
+    // ONLY MOTOR REGION GLOWS when motor preset is clicked
+    glowMotor = true;
+  } else {
+    // Dynamic Telemetry Channel Operations (Sliders & Excursions):
+    // CHT -> FRONT PORTION ONLY
+    if (isChtExcursion) {
+      glowFrontHead = true;
+    }
+    // EGT -> ENGINE / MOTOR PORTION ONLY
+    if (isEgtExcursion) {
+      glowMotor = true;
+    }
+    // Oil pressure drop or motor vibration fallback
+    if (oilPressure < 3.0 || currentVib > 5.5) {
+      glowMotor = true;
+    }
+  }
 
   const hasAnyGlow = glowProp || glowMotor || glowWings || glowMissiles || glowFrontHead;
 
@@ -247,45 +445,81 @@ export function UAVModel({ twinState }: UAVModelProps) {
     isPropIcing
   };
 
+  // 5. AEROSPACE WOBBLE (Strictly only when a fault or excursion is active)
+  let wobbleMultiplier = 0;
+  if (hasAnyGlow) {
+    wobbleMultiplier = 0.50;
+    if (maxCht > 215.0 || maxEgt > 780.0 || isPropPreset || isFullAirframeAlert) {
+      wobbleMultiplier = 1.0;
+    }
+  }
+
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
     if (groupRef.current) {
-      // Smooth loiter hover
+      // Smooth loiter hover on Y axis
       groupRef.current.position.y = Math.sin(t * 1.2) * 0.25;
 
-      // Real-time vibration harmonic shake when any fault is active
-      if (hasAnyGlow) {
-        groupRef.current.position.x = Math.sin(t * 26) * 0.08;
-        groupRef.current.position.z = Math.cos(t * 30) * 0.05;
-        groupRef.current.rotation.z = Math.sin(t * 24) * 0.02;
+      // Realistic Multi-Axis Aerodynamic Shudder & Vibration Wobble
+      if (wobbleMultiplier > 0) {
+        // High-frequency harmonic structural vibration + aerodynamic buffeting
+        const vibFreq1 = 30.0;
+        const vibFreq2 = 46.0;
+        const rollFreq = 26.0;
+        const pitchFreq = 20.0;
+        const yawFreq = 15.0;
+
+        // Calibrated subtle position jitter amplitudes (0.042 posAmp / 0.024 rotAmp)
+        const posAmp = 0.042 * wobbleMultiplier;
+        const rotAmp = 0.024 * wobbleMultiplier;
+
+        // 3D Spatial Position Shake
+        groupRef.current.position.x = Math.sin(t * vibFreq1) * posAmp + Math.sin(t * vibFreq2) * (posAmp * 0.35);
+        groupRef.current.position.z = Math.cos(t * (vibFreq1 * 1.15)) * (posAmp * 0.65);
+
+        // 3D Angular Aerodynamic Flutter (Roll, Pitch, Yaw)
+        groupRef.current.rotation.z = Math.sin(t * rollFreq) * rotAmp;
+        groupRef.current.rotation.x = 0.2 + Math.cos(t * pitchFreq) * (rotAmp * 0.75);
+        groupRef.current.rotation.y = -0.55 + Math.sin(t * yawFreq) * (rotAmp * 0.4);
       } else {
+        // Resting nominal stance (perfect smooth flight, zero wobble)
         groupRef.current.position.x = 0;
         groupRef.current.position.z = 0;
+        groupRef.current.rotation.x = 0.2;
+        groupRef.current.rotation.y = -0.55;
         groupRef.current.rotation.z = 0;
       }
     }
 
-    // Smooth pulse on active spatial point lights
-    const lightPulse = Math.sin(t * 4.5) * 0.45 + 0.55;
-    if (propLightRef.current) propLightRef.current.intensity = 18 * lightPulse;
-    if (motorLightRef.current) motorLightRef.current.intensity = 20 * lightPulse;
-    if (leftWingLightRef.current) leftWingLightRef.current.intensity = 16 * lightPulse;
-    if (rightWingLightRef.current) rightWingLightRef.current.intensity = 16 * lightPulse;
-    if (leftMissileLightRef.current) leftMissileLightRef.current.intensity = 16 * lightPulse;
-    if (rightMissileLightRef.current) rightMissileLightRef.current.intensity = 16 * lightPulse;
-    
-    // Boosted pulsing light intensity for front head
-    if (frontHeadLightRef.current) frontHeadLightRef.current.intensity = 38 * lightPulse;
-    if (frontHeadSecondaryLightRef.current) frontHeadSecondaryLightRef.current.intensity = 25 * lightPulse;
+    // Smooth pulse on active spatial point lights strictly when glowing
+    if (hasAnyGlow) {
+      const lightPulse = Math.sin(t * 4.5) * 0.45 + 0.55;
+      const baseLightIntensity = 28 * lightPulse;
+
+      if (propLightRef.current) propLightRef.current.intensity = baseLightIntensity;
+      if (motorLightRef.current) motorLightRef.current.intensity = baseLightIntensity * 1.2;
+      if (motorBellyLightRef.current) motorBellyLightRef.current.intensity = baseLightIntensity;
+      if (leftWingLightRef.current) leftWingLightRef.current.intensity = baseLightIntensity;
+      if (rightWingLightRef.current) rightWingLightRef.current.intensity = baseLightIntensity;
+      if (leftMissileLightRef.current) leftMissileLightRef.current.intensity = baseLightIntensity;
+      if (rightMissileLightRef.current) rightMissileLightRef.current.intensity = baseLightIntensity;
+      if (frontHeadLightRef.current) frontHeadLightRef.current.intensity = baseLightIntensity * 1.5;
+      if (frontHeadSecondaryLightRef.current) frontHeadSecondaryLightRef.current.intensity = baseLightIntensity;
+    }
   });
 
-  // Choose light colors: Cold Cyan-Blue (#00d4ff) for propeller/cold icing, vivid Red for mechanical/thermal alerts
-  const propColor = (isPropIcing || isColdIcing) ? "#00d4ff" : "#ff0022";
-  const motorColor = isColdIcing ? "#00b4d8" : "#ff2200";
-  const wingColor = isColdIcing ? "#00e5ff" : "#ff0033";
-  const missileColor = isColdIcing ? "#0284c7" : "#ff0044";
-  const frontHeadColor = isColdIcing ? "#38bdf8" : "#ff0022";
+  // IDENTICAL UNIFORM GLOW COLORS:
+  // Universal Warning Red = "#ff173d" across all fault parts
+  // Universal Cold Icing Blue = "#00d4ff" across all icing parts
+  const UNIFORM_RED_COLOR = "#ff173d";
+  const UNIFORM_ICE_COLOR = "#00d4ff";
+
+  const propColor = (isPropIcing || isColdIcing) ? UNIFORM_ICE_COLOR : UNIFORM_RED_COLOR;
+  const motorColor = isColdIcing ? UNIFORM_ICE_COLOR : UNIFORM_RED_COLOR;
+  const wingColor = isColdIcing ? UNIFORM_ICE_COLOR : UNIFORM_RED_COLOR;
+  const missileColor = isColdIcing ? UNIFORM_ICE_COLOR : UNIFORM_RED_COLOR;
+  const frontHeadColor = isColdIcing ? UNIFORM_ICE_COLOR : UNIFORM_RED_COLOR;
 
   return (
     <group ref={groupRef} rotation={[0.2, -0.55, 0]}>
@@ -307,27 +541,36 @@ export function UAVModel({ twinState }: UAVModelProps) {
         />
       )}
 
-      {/* Point lights mapped exclusively to each individual active fault point with pulsing */}
+      {/* Point lights rendered strictly when their respective fault zone is active */}
       {/* 1. PROPELLER END FAULT GLOW */}
       {glowProp && (
         <pointLight
           ref={propLightRef}
           position={[0, 1.8, -4.7]}
           color={propColor}
-          intensity={18}
-          distance={5.5}
+          intensity={28}
+          distance={7.0}
         />
       )}
 
-      {/* 2. MOTOR CORE (MIDDLE OF DRONE) FAULT GLOW */}
+      {/* 2. MOTOR CORE (MIDDLE ENGINE COMPARTMENT - TOP & BELLY) FAULT GLOW */}
       {glowMotor && (
-        <pointLight
-          ref={motorLightRef}
-          position={[0, 1.3, -1.8]}
-          color={motorColor}
-          intensity={20}
-          distance={6.0}
-        />
+        <>
+          <pointLight
+            ref={motorLightRef}
+            position={[0, 1.4, -0.6]}
+            color={motorColor}
+            intensity={32}
+            distance={8.0}
+          />
+          <pointLight
+            ref={motorBellyLightRef}
+            position={[0, -0.7, -0.6]}
+            color={motorColor}
+            intensity={26}
+            distance={6.5}
+          />
+        </>
       )}
 
       {/* 3. WINGS (LEFT & RIGHT) FAULT GLOW */}
@@ -335,17 +578,17 @@ export function UAVModel({ twinState }: UAVModelProps) {
         <>
           <pointLight
             ref={leftWingLightRef}
-            position={[-7.5, 0.7, -0.2]}
+            position={[-5.8, 0.7, -0.1]}
             color={wingColor}
-            intensity={16}
-            distance={6.5}
+            intensity={35}
+            distance={14.0}
           />
           <pointLight
             ref={rightWingLightRef}
-            position={[7.5, 0.7, -0.2]}
+            position={[5.8, 0.7, -0.1]}
             color={wingColor}
-            intensity={16}
-            distance={6.5}
+            intensity={35}
+            distance={14.0}
           />
         </>
       )}
@@ -357,37 +600,35 @@ export function UAVModel({ twinState }: UAVModelProps) {
             ref={leftMissileLightRef}
             position={[-3.2, -0.6, 0.1]}
             color={missileColor}
-            intensity={16}
-            distance={4.8}
+            intensity={24}
+            distance={6.0}
           />
           <pointLight
             ref={rightMissileLightRef}
             position={[3.2, -0.6, 0.1]}
             color={missileColor}
-            intensity={16}
-            distance={4.8}
+            intensity={24}
+            distance={6.0}
           />
         </>
       )}
 
-      {/* 5. FRONT HEAD OF THE DRONE FAULT GLOW (EXPANDED RADIUS & DUAL INTENSITY LIGHTS) */}
+      {/* 5. FRONT HEAD OF THE DRONE FAULT GLOW */}
       {glowFrontHead && (
         <>
-          {/* Forward Nose Tip & Sensor Turret Point Light */}
           <pointLight
             ref={frontHeadLightRef}
             position={[0, 0.9, 4.8]}
             color={frontHeadColor}
-            intensity={38}
-            distance={14.0}
+            intensity={35}
+            distance={12.0}
           />
-          {/* Forward Radome & Avionics Bay Underside Fill Light */}
           <pointLight
             ref={frontHeadSecondaryLightRef}
             position={[0, -0.4, 3.2]}
             color={frontHeadColor}
-            intensity={25}
-            distance={10.0}
+            intensity={24}
+            distance={8.0}
           />
         </>
       )}
