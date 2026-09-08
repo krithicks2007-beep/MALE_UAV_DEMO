@@ -120,3 +120,12 @@ tempCodeRunnerFile.py
 *.iges
 *.igs
 
+# Streamlit
+.streamlit/secrets.toml
+# MATLAB / Simulink generated files
+**/slprj/
+**/work/
+*.asv
+
+# MATLAB autosave / backup
+*.m~
