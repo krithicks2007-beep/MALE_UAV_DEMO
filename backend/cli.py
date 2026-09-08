@@ -1,7 +1,7 @@
 """
 CLI runner for Dummy Data Generator
 Usage:
-    python -m dummy_data_generator.cli [--state CRUISE] [--scenario OVERHEATING] [--interval 1.0]
+    python -m backend.cli [--state CRUISE] [--scenario OVERHEATING] [--interval 1.0]
 """
 import time
 import argparse
