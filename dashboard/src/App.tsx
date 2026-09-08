@@ -10,8 +10,8 @@ import {
   DiagnosticsPage,
   MaintenancePage,
   MissionReplayPage,
-  TwinViewPage,
 } from './pages/StubPages';
+import { TwinViewPage } from './pages/TwinViewPage';
 import { FloatingAlertModal } from './components/alerts/FloatingAlertModal';
 import { connect, disconnect } from './adapters';
 

@@ -113,3 +113,10 @@ scratch/
 *.tmp
 *.bak
 tempCodeRunnerFile.py
+
+# ── Large CAD raw files (>100MB) ────────────────────────────
+*.stp
+*.step
+*.iges
+*.igs
+

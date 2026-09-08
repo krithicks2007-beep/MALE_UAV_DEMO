@@ -22,32 +22,10 @@ export function TwinStagePanel() {
           </span>
         </div>
 
-        {/* Dual Model Switch: PBR Solid vs Wireframe */}
-        <div className="flex items-center bg-white/90 p-1 rounded-full border border-[#d6e0d8] shadow-sm">
-          <button
-            type="button"
-            onClick={() => setModelMode('SOLID')}
-            className={`px-3 py-1 text-xs font-mono font-semibold rounded-full transition-all flex items-center gap-1.5 ${
-              modelMode === 'SOLID'
-                ? 'bg-charcoal text-white shadow-xs'
-                : 'text-sage-700 hover:text-charcoal hover:bg-sage-100/60'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[14px]">view_in_ar</span>
-            <span>Solid PBR</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setModelMode('WIREFRAME')}
-            className={`px-3 py-1 text-xs font-mono font-semibold rounded-full transition-all flex items-center gap-1.5 ${
-              modelMode === 'WIREFRAME'
-                ? 'bg-sage-700 text-white shadow-xs'
-                : 'text-sage-700 hover:text-charcoal hover:bg-sage-100/60'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[14px]">grid_3x3</span>
-            <span>Wireframe</span>
-          </button>
+        {/* Airframe Twin Badge */}
+        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 border border-[#d6e0d8] shadow-sm">
+          <span className="material-symbols-outlined text-[15px] text-sage-700">flight</span>
+          <span className="font-mono text-xs font-semibold text-charcoal">MALE UAV AIRFRAME TWIN</span>
         </div>
       </div>
 
@@ -131,7 +109,7 @@ export function TwinStagePanel() {
 
         {/* Three.js Canvas */}
         <div className="relative z-10 w-full h-[500px]">
-          <TwinCanvas ref={canvasRef} twinState={twinState} />
+          <TwinCanvas ref={canvasRef} twinState={twinState} forceTarget="AIRFRAME" />
         </div>
       </div>
 
