@@ -1,0 +1,52 @@
+{
+  "threshold": 0.65,
+  "persistence_window": 3,
+  "model_version": "ai-v0.1",
+  "baseline_stats": {
+    "rpm": {
+      "mean": 5199.9661,
+      "std": 25.0
+    },
+    "map": {
+      "mean": 93.98901000000001,
+      "std": 1.0
+    },
+    "cht_mean": {
+      "mean": 135.25682799999998,
+      "std": 2.0
+    },
+    "cht_spread": {
+      "mean": 1.564328,
+      "std": 1.5
+    },
+    "egt_mean": {
+      "mean": 810.495032,
+      "std": 5.0
+    },
+    "egt_spread": {
+      "mean": 3.6883589999999997,
+      "std": 4.0
+    },
+    "oil_pressure": {
+      "mean": 4.199673000000001,
+      "std": 0.15
+    },
+    "oil_temperature": {
+      "mean": 87.99869,
+      "std": 1.5
+    },
+    "vibration": {
+      "mean": 0.3204841,
+      "std": 0.05
+    },
+    "residual_score": {
+      "mean": 0.0,
+      "std": 0.3
+    },
+    "thermal_residual_deviation": {
+      "mean": 0.019520000000000003,
+      "std": 0.3
+    }
+  },
+  "is_trained": true
+}
