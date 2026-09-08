@@ -1,0 +1,49 @@
+{
+  "engine": {
+    "timestamp": "2026-09-06T15:00:00Z",
+    "rpm": 5200,
+    "cht": [135.0, 137.0, 134.5, 136.0],
+    "egt": [680.0, 685.0, 678.0, 682.0],
+    "oil_pressure": 4.5,
+    "oil_temperature": 85.0,
+    "fuel_flow": 18.5,
+    "vibration": 1.2,
+    "battery_voltage": 14.1,
+    "alternator_current": 22.0,
+    "injection_timing": 22.0,
+    "engine_load": 0.70,
+    "throttle": 0.70,
+    "health_index": 0.98
+  },
+  "fault": {
+    "fault_code": 0,
+    "fault_name": "Healthy",
+    "severity": 0.0,
+    "confidence": 1.0,
+    "evidence": 0.0,
+    "active": false,
+    "source": "physics"
+  },
+  "degradation": {
+    "overall_degradation": 0.02,
+    "degradation_rate": 5e-8
+  },
+  "rul": {
+    "rul_hours": 850.0,
+    "rul_normalized": 0.85,
+    "rul_confidence": 0.90,
+    "life_state": 1
+  },
+  "mission": {
+    "mission_phase": "CRUISE",
+    "altitude_m": 3000.0,
+    "high_altitude": false,
+    "hot_weather": false,
+    "endurance": false
+  },
+  "ai": {
+    "anomaly_score": 0.02,
+    "anomaly_flag": false,
+    "ml_fault_code": 0
+  }
+}

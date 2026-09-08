@@ -1,0 +1,11 @@
+maintenance_priorities:
+  ROUTINE: "Routine monitoring and scheduled periodic servicing."
+  PLANNED: "Plan maintenance window during upcoming scheduled downtime."
+  HIGH: "High priority maintenance; inspect subsystem before next flight."
+  IMMEDIATE: "Immediate engineering review and maintenance required before operation."
+
+operational_guidelines:
+  LOW_RISK: "Nominal operation within envelope."
+  MODERATE_RISK: "Monitor parameters closely; exercise flight caution."
+  HIGH_RISK: "Consider flight envelope restriction or thermal/stress mitigation."
+  CRITICAL_RISK: "Critical engine risk; recommend mission abort or nearest safe landing site."

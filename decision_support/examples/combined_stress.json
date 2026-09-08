@@ -1,0 +1,56 @@
+{
+  "engine": {
+    "timestamp": "2026-09-06T15:20:00Z",
+    "rpm": 5500,
+    "cht": [180.0, 182.0, 185.0, 181.0],
+    "egt": [790.0, 795.0, 805.0, 798.0],
+    "oil_pressure": 3.5,
+    "oil_temperature": 105.0,
+    "fuel_flow": 24.0,
+    "vibration": 3.2,
+    "battery_voltage": 13.5,
+    "alternator_current": 28.0,
+    "injection_timing": 20.0,
+    "engine_load": 0.92,
+    "throttle": 0.95,
+    "health_index": 0.70
+  },
+  "fault": {
+    "fault_code": 8,
+    "fault_name": "Abnormal Vibration",
+    "severity": 0.55,
+    "confidence": 0.75,
+    "evidence": 0.70,
+    "active": true,
+    "source": "physics"
+  },
+  "degradation": {
+    "mechanical_degradation": 0.25,
+    "overall_degradation": 0.20,
+    "degradation_rate": 6e-7
+  },
+  "rul": {
+    "rul_hours": 240.0,
+    "rul_normalized": 0.24,
+    "rul_confidence": 0.70,
+    "life_state": 2
+  },
+  "mission": {
+    "mission_phase": "CLIMB",
+    "altitude_m": 5500.0,
+    "high_altitude": true,
+    "hot_weather": true,
+    "endurance": true,
+    "rapid_throttle": true,
+    "combined_stress": true
+  },
+  "environment": {
+    "ambient_temperature": 312.15,
+    "altitude_m": 5500.0
+  },
+  "ai": {
+    "anomaly_score": 0.65,
+    "anomaly_flag": true,
+    "ml_fault_code": 8
+  }
+}

@@ -1,0 +1,14 @@
+uncertainty_categories:
+  LOW:
+    min_confidence: 0.80
+    label: "LOW_UNCERTAINTY"
+  MODERATE:
+    min_confidence: 0.50
+    label: "MODERATE_UNCERTAINTY"
+  HIGH:
+    min_confidence: 0.00
+    label: "HIGH_UNCERTAINTY"
+
+fusion_weights:
+  physics_weight: 0.60
+  ai_weight: 0.40

@@ -3,12 +3,12 @@ import { Header } from './components/layout/Header';
 import { TabNav, type TabId } from './components/layout/TabNav';
 import { MainDashboardPage } from './pages/MainDashboardPage';
 import { LiveTelemetryPage } from './pages/LiveTelemetryPage';
+import { ScenarioControlPage } from './pages/ScenarioControlPage';
+import { MaintenancePage } from './pages/MaintenancePage';
 import {
   TelemetryTrendsPage,
-  ScenarioControlPage,
   TwinAnalysisPage,
   DiagnosticsPage,
-  MaintenancePage,
   MissionReplayPage,
 } from './pages/StubPages';
 import { TwinViewPage } from './pages/TwinViewPage';

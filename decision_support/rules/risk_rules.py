@@ -1,0 +1,31 @@
+"""
+Risk rules & threshold config loader
+"""
+import os
+import yaml
+from typing import Dict, Any
+
+_CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "risk_thresholds.yaml")
+
+
+def load_risk_config() -> Dict[str, Any]:
+    if os.path.exists(_CONFIG_PATH):
+        with open(_CONFIG_PATH, "r") as f:
+            return yaml.safe_load(f)
+    return {
+        "health": {"low_min": 0.90, "moderate_min": 0.75, "high_min": 0.50},
+        "fault": {"low_max": 0.20, "moderate_max": 0.50, "high_max": 0.80},
+        "rul": {"normal_monitoring_hours": 500, "maintenance_planning_hours": 200, "high_priority_hours": 50},
+        "degradation": {"stable_rate_max": 1.0e-7, "rapid_rate_min": 1.0e-6},
+        "weights": {
+            "health_risk": 0.20,
+            "fault_risk": 0.20,
+            "degradation_risk": 0.15,
+            "rul_risk": 0.15,
+            "mission_risk": 0.15,
+            "environment_risk": 0.05,
+            "anomaly_risk": 0.05,
+            "uncertainty_risk": 0.05,
+        },
+        "levels": {"low_max": 0.35, "moderate_max": 0.60, "high_max": 0.85},
+    }
