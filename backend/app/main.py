@@ -5,6 +5,7 @@ Streams continuous live dummy data to the React Dashboard and provides REST endp
 import asyncio
 import json
 import logging
+import os
 from typing import Set, Dict, Any, Optional
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -15,8 +16,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-# Ensure project root is on sys.path
-ROOT_DIR = Path(__file__).resolve().parent.parent
+# Ensure backend/ root (parent of app/) is on sys.path for cross-module imports (ai/, telemetry/, etc.)
+ROOT_DIR = Path(__file__).resolve().parent.parent  # backend/
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
@@ -101,9 +102,13 @@ app = FastAPI(
 )
 
 # CORS Configuration
+# Set ALLOWED_ORIGINS env var for production, e.g.:
+#   ALLOWED_ORIGINS=https://your-frontend.vercel.app,https://yourdomain.com
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
+ALLOWED_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",")] if _raw_origins != "*" else ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -351,4 +356,4 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, log_level="info")
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, log_level="info")
