@@ -1,5 +1,6 @@
 import { useTelemetryStore } from '../stores/telemetryStore';
 import { useHealthStore } from '../stores/healthStore';
+import { useConnectionStore } from '../stores/connectionStore';
 import { MetricCard } from '../components/common/MetricCard';
 import { EngineHealthCard } from '../components/health/EngineHealthCard';
 import { OperationalTelemetryCard } from '../components/telemetry/OperationalTelemetryCard';
@@ -16,6 +17,7 @@ export function MainDashboardPage() {
   const telemetry = useTelemetryStore((s) => s.telemetry);
   const context = useTelemetryStore((s) => s.context);
   const health = useHealthStore((s) => s.health);
+  const setActiveTab = useConnectionStore((s) => s.setActiveTab);
 
   return (
     <main className="max-w-[1560px] mx-auto px-6 lg:px-10 py-7 space-y-6">
@@ -73,6 +75,16 @@ export function MainDashboardPage() {
           <SagePanelHeader
             title="Digital Twin Telemetry"
             icon={<span className="material-symbols-outlined text-[18px] text-sage-800">analytics</span>}
+            right={
+              <button
+                onClick={() => setActiveTab('twin-analysis')}
+                className="px-2.5 py-1 rounded-xl bg-charcoal text-white text-[11px] font-mono hover:bg-black transition-colors flex items-center gap-1"
+                title="Open Deep Twin Analysis"
+              >
+                <span>Residuals</span>
+                <span className="material-symbols-outlined text-[13px]">arrow_forward</span>
+              </button>
+            }
           />
           <ActualVsPredictedChart />
           <AIInsightCard />

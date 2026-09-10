@@ -13,5 +13,4 @@ export function disconnect() {
   disconnectWebSocket();
 }
 
-export { connectWebSocket, disconnectWebSocket } from './WebSocketAdapter';
-export { setScenario, getCurrentScenario } from './MockAdapter';
+export { connectWebSocket, disconnectWebSocket, injectScenarioWS, sendWebSocketMessage } from './WebSocketAdapter';

@@ -10,8 +10,11 @@ const SEVERITY_COLOR: Record<string, string> = {
   CRITICAL:'text-red-600',
 };
 
+import { useConnectionStore } from '../../stores/connectionStore';
+
 export function AIInsightCard() {
   const diagnostics = useDiagnosticsStore((s) => s.diagnostics);
+  const setActiveTab = useConnectionStore((s) => s.setActiveTab);
 
   if (!diagnostics) return <GlassCard className="animate-pulse h-36" />;
 
@@ -69,9 +72,10 @@ export function AIInsightCard() {
       <PillButton
         variant="dark"
         className="mt-1"
-        right={<span className="material-symbols-outlined text-[16px]">tune</span>}
+        onClick={() => setActiveTab('diagnostics')}
+        right={<span className="material-symbols-outlined text-[16px]">arrow_forward</span>}
       >
-        Acknowledge Diagnostic
+        Open Full Diagnostics & Pipeline
       </PillButton>
     </>
   );

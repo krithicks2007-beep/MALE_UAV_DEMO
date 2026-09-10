@@ -537,16 +537,6 @@ class DummyAIDiagnosticEngine:
             failure_risk_pct = max(failure_risk_pct, 88.0)
             for v in tapas_critical_violations:
                 evidence.insert(0, v)
-                advisories.insert(0, MaintenanceAdvisory(
-                    timestamp=timestamp_str,
-                    mission_id=telemetry.mission_id,
-                    advisory_type="TAPAS_CRITICAL_ALERT",
-                    severity="CRITICAL",
-                    reason=v,
-                    recommended_action="Emergency Engine Power Reduction / RTB Protocol",
-                    confidence=99.0,
-                    related_fault_type="TAPAS_ENVELOPE_EXCEEDED"
-                ))
         elif tapas_warning_violations and severity in ("NOMINAL", "INFO"):
             severity = "WARNING"
             if primary_fault == "NONE":
@@ -567,16 +557,6 @@ class DummyAIDiagnosticEngine:
             failure_risk_pct = max(failure_risk_pct, 45.0)
             for v in tapas_warning_violations:
                 evidence.insert(0, v)
-                advisories.append(MaintenanceAdvisory(
-                    timestamp=timestamp_str,
-                    mission_id=telemetry.mission_id,
-                    advisory_type="TAPAS_WARNING_ALERT",
-                    severity="WARNING",
-                    reason=v,
-                    recommended_action="Monitor engine telemetry and verify operating margins",
-                    confidence=85.0,
-                    related_fault_type="TAPAS_ENVELOPE_WARNING"
-                ))
 
         # Overall health index calculation
         overall_health = (mech_health * 0.30) + (therm_health * 0.25) + (lub_health * 0.25) + (comb_health * 0.20)

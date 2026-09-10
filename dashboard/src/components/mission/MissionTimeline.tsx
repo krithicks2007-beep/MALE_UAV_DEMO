@@ -1,9 +1,11 @@
 import { useMissionStore } from '../../stores/missionStore';
+import { useConnectionStore } from '../../stores/connectionStore';
 import { SectionCard, CardHeader } from '../common/SectionCard';
 import { StatusPill } from '../common/StatusPill';
 
 export function MissionTimeline() {
   const mission = useMissionStore((s) => s.mission);
+  const setActiveTab = useConnectionStore((s) => s.setActiveTab);
   if (!mission) return <SectionCard className="animate-pulse min-h-[200px]" />;
 
   const anomaly = mission.anomaly_events[0];
@@ -13,10 +15,19 @@ export function MissionTimeline() {
       <CardHeader
         title="Mission Timeline & Anomaly Events"
         right={
-          <StatusPill
-            label={`PHASE: ${mission.current_phase_label}`}
-            variant="muted"
-          />
+          <div className="flex items-center gap-2">
+            <StatusPill
+              label={`PHASE: ${mission.current_phase_label}`}
+              variant="muted"
+            />
+            <button
+              onClick={() => setActiveTab('replay')}
+              className="px-2.5 py-1 rounded-xl bg-charcoal text-white text-[11px] font-mono hover:bg-black transition-colors flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-[14px]">play_circle</span>
+              Open Replay
+            </button>
+          </div>
         }
       />
 

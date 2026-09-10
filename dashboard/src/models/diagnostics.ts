@@ -24,6 +24,7 @@ export interface DiagnosticsData {
   rul_value: number | null;         // Remaining Useful Life count
   rul_unit: string;                 // "HOURS" | "CYCLES"
   rul_confidence: number | null;    // 0–100 %
+  rul_uncertainty?: number | null;  // margin in hours
   evidence: string[];               // Supporting data lines (display only)
   failure_risk_pct: number;         // 0–100 %
   last_updated: string;             // ISO 8601

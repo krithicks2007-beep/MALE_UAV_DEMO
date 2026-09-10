@@ -11,8 +11,6 @@ import { useAlertStore } from '../stores/alertStore';
 import { useMissionStore } from '../stores/missionStore';
 import { useTwinStore } from '../stores/twinStore';
 import { useConnectionStore } from '../stores/connectionStore';
-import { useScenarioStore } from '../stores/scenarioStore';
-import { disconnect as disconnectMock } from './MockAdapter';
 import type { ScenarioId } from '../models/engine';
 import type { Alert } from '../models/alerts';
 
@@ -21,9 +19,6 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let isIntentionallyClosed = false;
 
 export function connectWebSocket(url?: string) {
-  // Ensure mock adapter interval is completely stopped
-  disconnectMock();
-
   const wsHost = typeof window !== 'undefined' ? window.location.hostname || '127.0.0.1' : '127.0.0.1';
   const targetUrl = url || `ws://${wsHost}:8000/ws/telemetry`;
 
@@ -75,38 +70,28 @@ export function connectWebSocket(url?: string) {
           useDiagnosticsStore.getState().setTwinAnalysis(frame.twin_analysis);
         }
 
-        // 4. 3D Twin Visualization State & Active Scenario Sync
+        // 4. 3D Twin Visualization State
         if (frame.twin_state) {
           useTwinStore.getState().setTwinState(frame.twin_state);
         }
-        const validScenarios = ['MISFIRE', 'INJECTOR_ABNORMALITY', 'LUBRICATION_ISSUE', 'OVERHEATING', 'SENSOR_DRIFT', 'ABNORMAL_VIBRATION'];
-        if (frame.active_scenario?.id && validScenarios.includes(frame.active_scenario.id)) {
-          useScenarioStore.getState().setActiveScenario(frame.active_scenario.id as ScenarioId);
-        }
-
-
-
 
         // 5. Advisories & Alerts (clear or set)
         const advList = frame.advisories || [];
-        const mappedAlerts: Alert[] = advList
-          .filter((adv: any) => adv.severity !== 'INFO' && adv.advisory_type !== 'DSS_LOW_ADVISORY')
-          .map((adv: any, idx: number) => ({
-            id: `ADV-${idx}-${adv.advisory_type || 'ALERT'}`,
-            timestamp: adv.timestamp,
-            severity: adv.severity || 'WARNING',
-            title: adv.advisory_type || 'Maintenance Advisory',
-            description: `${adv.reason} • Action: ${adv.recommended_action}`,
-            source: 'AI_DIAGNOSTICS',
-            related_parameter: adv.related_fault_type || null,
-            related_subsystem: null,
-            current_value: null,
-            threshold_value: null,
-            acknowledged: false,
-            active: true
-          }));
+        const mappedAlerts: Alert[] = advList.map((adv: any, idx: number) => ({
+          id: `ADV-${idx}-${adv.advisory_type || 'ALERT'}`,
+          timestamp: adv.timestamp,
+          severity: adv.severity || 'WARNING',
+          title: adv.advisory_type || 'Maintenance Advisory',
+          description: `${adv.reason} • Action: ${adv.recommended_action}`,
+          source: 'AI_DIAGNOSTICS',
+          related_parameter: adv.related_fault_type || null,
+          related_subsystem: null,
+          current_value: null,
+          threshold_value: null,
+          acknowledged: false,
+          active: true
+        }));
         useAlertStore.getState().setAlerts(mappedAlerts);
-
 
         // 6. Mission info
         if (frame.flight_context) {
@@ -118,13 +103,6 @@ export function connectWebSocket(url?: string) {
               current_phase_label: frame.flight_context.mission_phase || currentMission.current_phase_label
             });
           }
-        }
-
-        // 7. Active Scenario Sync
-        if (frame.active_scenario && frame.active_scenario.id) {
-          useScenarioStore.setState({ activeScenario: frame.active_scenario.id });
-        } else if (frame.active_scenario === null) {
-          useScenarioStore.setState({ activeScenario: 'NORMAL' });
         }
       } catch (err) {
         console.error('[WebSocketAdapter] Parse error:', err);
