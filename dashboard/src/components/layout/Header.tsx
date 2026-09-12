@@ -70,7 +70,7 @@ export function Header() {
         {/* Right: Generator Link + alerts + clock + actions */}
         <div className="flex items-center gap-4">
           <a
-            href="http://127.0.0.1:8000/control"
+            href={`${import.meta.env.VITE_BACKEND_API_URL || 'https://maleuav.onrender.com'}/control`}
             target="_blank"
             rel="noreferrer"
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-mono font-medium shadow-sm transition"

@@ -22,9 +22,8 @@ export function connectWebSocket(url?: string) {
   // Resolve backend WS URL: env var > explicit arg > same-host fallback
   // Set VITE_BACKEND_WS_URL in dashboard/.env for local dev or in your hosting platform for production
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const envWsUrl: string | undefined = (import.meta as any).env?.VITE_BACKEND_WS_URL;
-  const wsHost = typeof window !== 'undefined' ? window.location.hostname || '127.0.0.1' : '127.0.0.1';
-  const targetUrl = envWsUrl || url || `ws://${wsHost}:8000/ws/telemetry`;
+  const envWsUrl: string | undefined = import.meta.env.VITE_BACKEND_WS_URL;
+  const targetUrl = envWsUrl || url || 'wss://maleuav.onrender.com/ws/telemetry';
 
   if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
     return;

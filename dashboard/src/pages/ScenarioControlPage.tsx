@@ -36,8 +36,8 @@ export function ScenarioControlPage() {
     injectScenarioWS(id, 60.0);
 
     // Non-blocking REST API trigger
-    const backendHost = typeof window !== 'undefined' ? window.location.hostname || '127.0.0.1' : '127.0.0.1';
-    fetch(`http://${backendHost}:8000/api/scenarios/start`, {
+    const backendApiUrl = import.meta.env.VITE_BACKEND_API_URL || 'https://maleuav.onrender.com';
+    fetch(`${backendApiUrl}/api/scenarios/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ scenario_id: id, duration_s: 60.0 }),
